@@ -1,5 +1,3 @@
-
-
 class FunctionRecord:
 	""" A root record in the caller/callee report,
 		all the callers and callees """
