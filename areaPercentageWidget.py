@@ -26,6 +26,23 @@ def resizeRect(rect, resizeMult):
     shrunkRect.translate(dx, dy)
     return shrunkRect
 
+def suppressCorners(rect, deltaX, deltaY):
+    """ Bring in the corners by deltaX and deltaY
+        """
+    shrunkRect = QRect()
+    ur = QPoint()
+    lL = QPoint()
+    tL = rect.topLeft()
+    bR = rect.bottomRight()
+    tL.setX(tL.x() + deltaX)
+    tL.setY(tL.y() + deltaY)
+    bR.setX(bR.x() - deltaX)
+    bR.setY(bR.y() - deltaY)
+    shrunkRect.setTopLeft(tL)
+    shrunkRect.setBottomRight(bR)
+    return shrunkRect
+    
+
 def calculateTextRect(parentRect):
     """ calculate a rectangle with the same width
         but a height 20% shorter, moving the lower
@@ -152,7 +169,7 @@ class AreaPercentageWidget(QWidget):
                 currPen.setColor(colors[self.depth % 3])
                 perc = children[self.percIdx].getPercentage()
                 print "Getting perc %lf" % perc
-                nextRect = resizeRect(self.packedRect.nextRect(perc), 0.9)
+                nextRect =  suppressCorners(self.packedRect.nextRect(perc), 5, 5) 
                 print "nextRect %s" % str(nextRect)
                 newChild = AreaPercentageWidget(parent = self,name="Hello",parentRect = zeroRect(nextRect), pen=currPen, depth=self.depth+1, item=children[self.percIdx])
                 newChild.setGeometry(nextRect)
