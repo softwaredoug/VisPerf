@@ -10,16 +10,17 @@ class HdrFields:
 	minField = fieldType
 	maxField = applicationExcl
 
-class Entry:
+class Entry(object):
 	
 	def __init__(self, csvLine):
 		self.fields = csvLine.split(',')
 		self.fields = [field.lstrip("\"").rstrip("\"") for field in self.fields]
-		for i in range(HdrFields.elapsedIncl, HdrFields.applicationExcl+1):
-			self.fields[i] = int(self.fields[i]) 
+		self.type = self.fields[HdrFields.fieldType]
+		self.functionName = self.fields[HdrFields.functionName]
+		self.elapsedIncl = float(self.fields[HdrFields.elapsedIncl])
+		self.elapsedExcl = float(self.fields[HdrFields.elapsedExcl])
 		
-	def getField(self, fieldId):
-		if (fieldId < HdrFields.minField) or (fieldId > HdrFields.maxField):
-			raise IndexError()
-		else:
-			return self.fields[fieldId]
+	def __str__(self):
+		return "%s,Function: %s" \
+			% (self.type, 
+				self.functionName)

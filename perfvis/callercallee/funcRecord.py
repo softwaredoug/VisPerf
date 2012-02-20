@@ -1,4 +1,7 @@
-class FunctionRecord:
+from entry import Entry
+from entry import HdrFields
+
+class FunctionRecord(object):
 	""" A root record in the caller/callee report,
 		all the callers and callees """
 	def __init__(self, srcStr):
@@ -7,7 +10,6 @@ class FunctionRecord:
 		pass
 	
 	def parse(self, srcStr):
-		from entry import Entry
 		srcStr = srcStr.rstrip().lstrip()
 		self.entries = [Entry(line) for line in srcStr.split("\n")]
 		self.postValidate()
@@ -19,8 +21,7 @@ class FunctionRecord:
 			raise ValueError("You attempted to construct around more than 1 Root entry")
 	
 	def getEntriesOfType(self, typeName):
-		from entry import HdrFields;
-		typeMatch = lambda ent: ent.getField(HdrFields.fieldType) == typeName
+		typeMatch = lambda ent: ent.type == typeName
 		return filter(typeMatch, self.entries)
 	
 	def getCallers(self):
@@ -33,3 +34,7 @@ class FunctionRecord:
 		rootRecs = self.getEntriesOfType("Root")
 		assert len(rootRecs) == 1
 		return rootRecs[0]
+	
+	def __str__(self):
+		e = self.getRoot()
+		return e.functionName
