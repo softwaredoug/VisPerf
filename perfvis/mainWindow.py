@@ -22,12 +22,12 @@ class Window(QWidget):
         report = loadReport(sys.argv[1])
         item = CallerCalleePercentageItem(report, "_wmainCRTStartup", 100.0)
         #item = TestAreaPercentageItem(100.0)
-        self.renderArea = AreaPercentageWidget(QRect(0,0,640,480), item=item)
+        geom = QRect(0,0,1024,780)
+        self.renderArea = AreaPercentageWidget(geom, item=item)
+        self.renderArea.setGeometry(geom)
               
-        self.mainLayout = QGridLayout()
-        self.mainLayout.setColumnStretch(0,1)
-        self.mainLayout.setColumnStretch(3,1)
-        self.mainLayout.addWidget(self.renderArea, 0,0,1,4)
+        self.mainLayout = QHBoxLayout()
+        self.mainLayout.addWidget(self.renderArea)
         self.setLayout(self.mainLayout)
 
         self.setWindowTitle(tr("Basic Drawing"))

@@ -66,6 +66,9 @@ def moveCornersTowardCenter(rect, deltaX, deltaY):
     tL.setY(tL.y() + deltaY)
     bR.setX(bR.x() - deltaX)
     bR.setY(bR.y() - deltaY)
+    if isinstance(rect,QRectF):
+        tL = tL.toPoint()
+        bR = bR.toPoint()
     shrunkRect.setTopLeft(tL)
     shrunkRect.setBottomRight(bR)
     return shrunkRect

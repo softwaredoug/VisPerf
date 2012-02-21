@@ -1,5 +1,5 @@
 
-from PySide.QtCore import QRect
+from PySide.QtCore import QRect, QRectF
 from rectUtils import validRectReturned
 
 class Direction:
@@ -18,8 +18,8 @@ class PackedRect:
         as long as there continues to be room in the parent rect"""  
     
     def __init__(self, parentRect):
-        self.parentRect = self.leftoverRect = QRect()
-        self.parentRect = parentRect
+        self.parentRect = self.leftoverRect = QRectF()
+        self.parentRect = QRectF(parentRect)
         print "PackedRect Created with %s" % str(parentRect)
         self.reset()
         
@@ -49,16 +49,17 @@ class PackedRect:
             the leftover rect"""
         assert not self.leftoverRect.isEmpty()
         print "Giving up remaining..."
-        remaining = QRect(self.leftoverRect)
+        remaining = QRectF(self.leftoverRect)
         self.leftoverRect.setWidth(-1)
         self.leftoverRect.setHeight(-1)
         assert self.leftoverRect.isEmpty()
         return remaining
-   
+    
+  
     @validRectReturned 
     def __giveUpLeftoverHeight(self, neededArea):
         """ Sacrifice height from the leftover rect for the needed area"""
-        newRect = QRect()
+        newRect = QRectF()
         newRect.setTopLeft(self.leftoverRect.topLeft())
 
         # a = width * height we know which a we want, so we 
@@ -67,8 +68,6 @@ class PackedRect:
         (width, height) = (self.leftoverRect.width(), self.leftoverRect.height())
         height = neededArea / width
         print "Vertical..., na %lf width %lf height %lf" % (neededArea, width, height)
-        if height < 1:
-            height = 1
         if self.leftoverRect.height() <= height:
             return self.__giveUpAllRemainingArea()
         self.leftoverRect.setY(self.leftoverRect.y() + height)
@@ -83,15 +82,12 @@ class PackedRect:
     @validRectReturned
     def __giveUpLeftoverWidth(self, neededArea):
         """ Sacrifice width from the leftover rect for the needed area"""
-        newRect = QRect()
+        newRect = QRectF()
         newRect.setTopLeft(self.leftoverRect.topLeft())
-        
        
         (width, height) = (self.leftoverRect.width(), self.leftoverRect.height())
         width = neededArea / height
         print "Horizontal..., na %lf width %lf height %lf" % (neededArea, width, height)
-        if width < 1:
-            width = 1
         if self.leftoverRect.width() <= width:
             return self.__giveUpAllRemainingArea()
         self.leftoverRect.setX(self.leftoverRect.x() + width)
@@ -108,10 +104,12 @@ class PackedRect:
     def nextRect(self, percentage):
         """ Get the next rect from leftoverRect, update
             leftoverRect with whats leftover """
+        if self.isEmpty():
+            raise ValueError("This guys is empty")
         neededArea = (self.parentRect.width() * self.parentRect.height()) * (percentage/100.0)
         leftoverArea = self.leftoverRect.width() * self.leftoverRect.height()
         if neededArea > leftoverArea:
-            raise ValueError("Insufficient area, needed %lf, available %lf" % (neededArea, leftoverArea))
+            return self.__giveUpAllRemainingArea()
         
         self.updateDirection(percentage)
         

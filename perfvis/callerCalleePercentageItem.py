@@ -45,7 +45,9 @@ class CallerCalleePercentageItem(AreaPercentageItem):
                             CallerCalleePercentageItem(self.report, 
                                                        callee.functionName,
                                                        perc))
-        assert (exclPercentage + sum([item.getPercentage() for item in children])) <= 100.0
+        totPerc = (exclPercentage + sum([item.getPercentage() for item in children]))
+        print "totPerc %lf, exclPerc %lf" % (totPerc, exclPercentage)
+        assert totPerc < 100.0001
         return children
             
         

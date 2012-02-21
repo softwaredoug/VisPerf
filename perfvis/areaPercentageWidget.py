@@ -84,7 +84,7 @@ class AreaPercentageWidget(QWidget):
         self.brush = brush
         self.percIdx = 0
         self.absDepth = absDepth
-        if self.absDepth < 2:
+        if self.absDepth < 20:
             self.__createChildWidgets()
         
         
@@ -111,20 +111,22 @@ class AreaPercentageWidget(QWidget):
                 if self.packedRect.isEmpty():
                     return
                 childRect = self.packedRect.nextRect(child.getPercentage())
+                if childRect.width() < 0 or childRect.height() < 0:
+                    continue
                 (alwaysShrinkX, alwaysShrinkY) = (10,30)
                 if childRect.width() < (alwaysShrinkX * 2):
                     alwaysShrinkX = 0
                 if childRect.height() < (alwaysShrinkY * 2):
                     alwaysShrinkY = 0
                 childRect = moveCornersTowardCenter(childRect, alwaysShrinkX, alwaysShrinkY) 
-                assert childRect.intersected(self.packedRect.parentRect) == childRect
+                #assert childRect.intersected(self.rect()) == childRect
 
                 yield (childRect, child)       
     
     def __createChildWidgets(self):
         """ Generate all children widgets from child packed rects """
         print "Generating for depth %i" % self.absDepth
-        colors = [QColor(0xff, 0, 0), QColor(0, 0xff, 0), QColor(0x00, 0x00, 0xff)]
+        colors = [QColor(0xff, 0xdf, 0x80), QColor(0x9f, 0xff, 0x80), QColor(0x80, 0xff, 0x9f)]
         currPen = QPen()
         self.currColor += 1
         currPen.setWidth(1)
