@@ -23,6 +23,13 @@ class CallerCalleePercentageItem(AreaPercentageItem):
         self.report = report
         self.rootFunction = rootFunction
         self.perc = perc
+        
+    def __myRec(self):
+        return self.report.getRecord(self.rootFunction)
+
+    def __myEntry(self):
+        return self.report.getRecord(self.rootFunction).getRoot()
+
     
     def getPercentage(self):
         """ Get my percentage in the parent """
@@ -30,11 +37,11 @@ class CallerCalleePercentageItem(AreaPercentageItem):
     
     def getName(self):
         """ Get my name, how I should be labeled on the GUI """
-        return self.rootFunction
+        return self.rootFunction + "\n%.0lf" % self.__myEntry().elapsedIncl
         
     def getChildren(self):
         """ Build a list of my children """
-        myRec = self.report.getRecord(self.rootFunction)
+        myRec = self.__myRec()
         totTime = totRecordTime(myRec)
         exclPercentage = (myRec.getRoot().elapsedExcl / totTime) * 100.0
         children = []

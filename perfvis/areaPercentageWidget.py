@@ -46,8 +46,7 @@ class TestAreaPercentageItem(AreaPercentageItem):
         AreaPercentageItem.__init__(self)
         self.perc = perc
     
-    def getPercentage(self):
-        print "returning %lf" % self.perc 
+    def getPercentage(self): 
         return self.perc
     
     def getName(self):
@@ -61,31 +60,83 @@ class TestAreaPercentageItem(AreaPercentageItem):
     
     def getLeftoverPerc(self):
         return 0.1
-        
+    
+class EmptyAreaPercentageItem(AreaPercentageItem):
+    def __init__(self, perc,name):
+        AreaPercentageItem.__init__(self)
+        self.perc = perc
+        self.name = name
+
+    def getPercentage(self): 
+        return self.perc
+    
+    def getName(self):
+        return self.name
+    
+    def getChildren(self):
+        return []
+    
+    def getLeftoverPerc(self):
+        return 100.0
+
         
 
+
 class AreaPercentageWidget(QWidget):
+    __pallete = (QColor(0xff, 0xdf, 0x80), QColor(0x9f, 0xff, 0x80), QColor(0x80, 0xff, 0x9f))
+    __reservedLabelY = 30
+    __mouseOverColor = Qt.red
+    __defaultPenColor = Qt.black
+    __showLocalTime = True
+    
+    def __createDefaultPen(self):
+        pen = QPen()
+        adjDepth = self.absDepth
+        if adjDepth == 0:
+            adjDepth = 1
+        pen.setWidth(2)
+        pen.setColor(self.__defaultPenColor)
+        return pen
+
+        
+    def __createDefaultBrush(self,parentRect):
+        brush = QRadialGradient()
+        brush.setRadius(parentRect.width() + parentRect.height())
+        brush.setFocalPoint(parentRect.center())
+        brush.setColorAt(0.0, Qt.white)
+        brush.setColorAt(0.5, self.__pallete[self.absDepth % 3])
+        return brush  
+    
+    def __createLabel(self, parentRect, text):
+        labelRect = calculateTextRect(parentRect, self.__reservedLabelY)
+        label = QLabel(text, self)
+        label.setGeometry(labelRect)
+        label.setAlignment(Qt.AlignHCenter)
+        return label
+
+    
     def __init__(self, parentRect, absDepth = 0, pen = None, brush = None, parent = None, item = None):
         QWidget.__init__(self, parent)
         self.childAreaRects = []
-        labelRect = calculateTextRect(parentRect, 50)
-        self.label = QLabel(item.getName(), self)
-        self.label.setGeometry(labelRect)
-        self.label.setAlignment(Qt.AlignHCenter)
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.item = item
-        propUnusedSpace = 0
-        print " Created %s " % parentRect   
-        zeroedRect = parentRect
-        print " Zeroed %s " % zeroedRect
-        self.packedRect = packRect.PackedRect(zeroedRect)        
-        self.currColor = 0
+        self.label = self.__createLabel(
+                    parentRect, self.item.getName()) 
         self.pen = pen
         self.brush = brush
-        self.percIdx = 0
         self.absDepth = absDepth
-        if self.absDepth < 20:
-            self.__createChildWidgets()
+        if self.brush == None:
+            self.brush = self.__createDefaultBrush(parentRect)
+        if self.pen == None:
+            self.pen = self.__createDefaultPen()
+      
+        try:
+            shrunkInRect = moveCornersTowardCenter(parentRect, 2, self.__reservedLabelY) 
+            self.packedRect = packRect.PackedRect(shrunkInRect)
+            if not shrunkInRect.isEmpty():
+                self.__createChildWidgets()
+        except ValueError as e:
+            return
         
         
     def minimumSizeHint(self):
@@ -99,6 +150,12 @@ class AreaPercentageWidget(QWidget):
         for child in children:
             if child.getPercentage() > 0:
                 print child.getPercentage()
+                
+    def __adjustChildRect(self, childRect):
+        if childRect.width() < 0 or childRect.height() < 0:
+            return None
+        childRect = moveCornersTowardCenter(childRect, 5, 5)
+        return childRect 
     
     def __pairChildRects(self, children):
         """ Create all child rectangles from the passed in children,
@@ -106,44 +163,54 @@ class AreaPercentageWidget(QWidget):
             gets reported from teh item, for these no rectangle
             will be generated """
         self.__printTestVector(children)
+        children = sorted(children, key=lambda child: child.getPercentage(), reverse=True)
         for child in children:
             if child.getPercentage() > 0:
                 if self.packedRect.isEmpty():
                     return
                 childRect = self.packedRect.nextRect(child.getPercentage())
-                if childRect.width() < 0 or childRect.height() < 0:
-                    continue
-                (alwaysShrinkX, alwaysShrinkY) = (10,30)
-                if childRect.width() < (alwaysShrinkX * 2):
-                    alwaysShrinkX = 0
-                if childRect.height() < (alwaysShrinkY * 2):
-                    alwaysShrinkY = 0
-                childRect = moveCornersTowardCenter(childRect, alwaysShrinkX, alwaysShrinkY) 
                 #assert childRect.intersected(self.rect()) == childRect
+                childRect = self.__adjustChildRect(childRect)
+                if childRect:
+                    yield (childRect, child)
+                    
+    def __createChildWidget(self, parent, childRect, abDepth, item):
+        newChild = AreaPercentageWidget(parent=self,
+                                        parentRect=normalize(childRect),
+                                        absDepth=abDepth,
+                                        item=item)
+        newChild.setGeometry(childRect)
+        newChild.show()
+        
+    def __createLeftoverWidget(self, leftoverPerc):
+        print "Leftover %lf" % leftoverPerc
+        leftoverRect = self.packedRect.nextRect(leftoverPerc)
+        leftoverRect = self.__adjustChildRect(leftoverRect)
+        if leftoverRect:
+            self.__createChildWidget(parent=self, 
+                                     childRect=leftoverRect, 
+                                     abDepth=self.absDepth+1,
+                                     item=EmptyAreaPercentageItem(leftoverPerc, "local"))
 
-                yield (childRect, child)       
     
     def __createChildWidgets(self):
         """ Generate all children widgets from child packed rects """
         print "Generating for depth %i" % self.absDepth
-        colors = [QColor(0xff, 0xdf, 0x80), QColor(0x9f, 0xff, 0x80), QColor(0x80, 0xff, 0x9f)]
-        currPen = QPen()
-        self.currColor += 1
-        currPen.setWidth(1)
-        currPen.setColor(Qt.white)
+        if self.item == None:
+            return
 
+        children = False
         for (childRect, child ) in self.__pairChildRects(self.item.getChildren()):
-            brush = QRadialGradient(1,self.height() /2,self.rect().height()*2)
-            brush.setColorAt(0.0, Qt.white)
-            brush.setColorAt(0.5, colors[self.absDepth % 3])
-            newChild = AreaPercentageWidget(parent = self,
-                                            parentRect = normalize(childRect),
-                                            pen=currPen,
-                                            brush = brush,
-                                            absDepth=self.absDepth+1,
-                                            item=child)
-            newChild.setGeometry(childRect)
-            newChild.show()
+            self.__createChildWidget(parent=self, 
+                                     childRect=childRect, 
+                                     abDepth = self.absDepth+1,
+                                     item = child)
+            children = True
+        if self.__showLocalTime and (children):
+            self.__createLeftoverWidget(self.item.getLeftoverPerc())
+                
+        
+        
                          
     
     def mousePressEvent(self, mouseEvent):
@@ -157,15 +224,13 @@ class AreaPercentageWidget(QWidget):
         
     def enterEvent(self, enterEvent):
         if self.pen != None:
-            self.pen.setColor(Qt.black)
+            self.pen.setColor(self.__mouseOverColor)
             self.pen.setWidth(3)
+        self.update()
 
         
     def leaveEvent(self, leaveEvent):
-        if self.pen != None:
-            self.pen.setColor(Qt.white)
-            self.pen.setWidth(1)
-            self.parentWidget().leaveEvent(leaveEvent)
+        self.pen = self.__createDefaultPen()
         
 
         #self.brush = None
@@ -192,8 +257,8 @@ class AreaPercentageWidget(QWidget):
         #print "Painting %s" % str(self.packedRect.parentRect)
         
         rectToDraw = self.rect()
-        rectToDraw.setWidth(rectToDraw.width()-1)
-        rectToDraw.setHeight(rectToDraw.height()-1)
+        #rectToDraw.setWidth(rectToDraw.width()-1)
+        #rectToDraw.setHeight(rectToDraw.height()-1)
         
         painter.drawRect(rectToDraw)
         

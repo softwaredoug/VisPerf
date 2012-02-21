@@ -22,7 +22,7 @@ class Window(QWidget):
         report = loadReport(sys.argv[1])
         item = CallerCalleePercentageItem(report, "_wmainCRTStartup", 100.0)
         #item = TestAreaPercentageItem(100.0)
-        geom = QRect(0,0,1024,780)
+        geom = QRect(0,0,1280,1000)
         self.renderArea = AreaPercentageWidget(geom, item=item)
         self.renderArea.setGeometry(geom)
               
