@@ -45,7 +45,6 @@ class CallerCalleePercentageItem(AreaPercentageItem):
         totTime = totRecordTime(myRec)
         exclPercentage = (myRec.getRoot().elapsedExcl / totTime) * 100.0
         children = []
-        print "Children of %s" % (self.rootFunction)
         for callee in myRec.getCallees():
             perc = (callee.elapsedIncl / totTime) * 100.0
             children.append(
@@ -53,9 +52,11 @@ class CallerCalleePercentageItem(AreaPercentageItem):
                                                        callee.functionName,
                                                        perc))
         totPerc = (exclPercentage + sum([item.getPercentage() for item in children]))
-        print "totPerc %lf, exclPerc %lf" % (totPerc, exclPercentage)
         assert totPerc < 100.0001
         return children
+    
+    def __repr__(self):
+        return "CallerCalleePercentageItem(%s, %lf)" % (self.rootFunction, self.perc)
             
         
         

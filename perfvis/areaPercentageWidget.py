@@ -129,15 +129,13 @@ class AreaPercentageWidget(QWidget):
             self.brush = self.__createDefaultBrush(parentRect)
         if self.pen == None:
             self.pen = self.__createDefaultPen()
-      
-        try:
-            shrunkInRect = moveCornersTowardCenter(parentRect, 2, self.__reservedLabelY) 
-            self.packedRect = packRect.PackedRect(shrunkInRect)
-            if not shrunkInRect.isEmpty():
-                self.__createChildWidgets()
-        except ValueError as e:
-            return
+
         
+        if parentRect.width() > 4 and parentRect.height() > self.__reservedLabelY*2:
+            shrunkInRect = moveCornersTowardCenter(parentRect, 2, self.__reservedLabelY) 
+            self.packedRect = packRect.PackedRect(shrunkInRect, item.getChildren())
+            if not shrunkInRect.isEmpty():
+                self.__createChildWidgets()      
         
     def minimumSizeHint(self):
         return self.size()
@@ -145,34 +143,23 @@ class AreaPercentageWidget(QWidget):
     #def sizeHint(self):
     #    return QSize(400,200)
     def __printTestVector(self, children):
-        print "TESTVECTORTESTVECTOR"
+        print "TESTVECTORTESTVECTOR %i children" % len(children)
         print self.packedRect.parentRect
         for child in children:
             if child.getPercentage() > 0:
                 print child.getPercentage()
                 
     def __adjustChildRect(self, childRect):
+        (deltaX, deltaY) = (5,5)
         if childRect.width() < 0 or childRect.height() < 0:
+            assert False
             return None
-        childRect = moveCornersTowardCenter(childRect, 5, 5)
-        return childRect 
-    
-    def __pairChildRects(self, children):
-        """ Create all child rectangles from the passed in children,
-            some children may be so miniscule that a 0 percentage
-            gets reported from teh item, for these no rectangle
-            will be generated """
-        self.__printTestVector(children)
-        children = sorted(children, key=lambda child: child.getPercentage(), reverse=True)
-        for child in children:
-            if child.getPercentage() > 0:
-                if self.packedRect.isEmpty():
-                    return
-                childRect = self.packedRect.nextRect(child.getPercentage())
-                #assert childRect.intersected(self.rect()) == childRect
-                childRect = self.__adjustChildRect(childRect)
-                if childRect:
-                    yield (childRect, child)
+        rVal = moveCornersTowardCenter(childRect, 0, 0)
+        if childRect.width() > deltaX * 2:
+            rVal = moveCornersTowardCenter(rVal, deltaX, 0)
+        if childRect.height() > deltaY * 2:
+            rVal = moveCornersTowardCenter(rVal, 0, deltaY)
+        return rVal
                     
     def __createChildWidget(self, parent, childRect, abDepth, item):
         newChild = AreaPercentageWidget(parent=self,
@@ -200,12 +187,16 @@ class AreaPercentageWidget(QWidget):
             return
 
         children = False
-        for (childRect, child ) in self.__pairChildRects(self.item.getChildren()):
+        for (child, childRect) in self.packedRect:
+            childRect = self.__adjustChildRect(childRect)
+            print "CREATING"
             self.__createChildWidget(parent=self, 
                                      childRect=childRect, 
                                      abDepth = self.absDepth+1,
                                      item = child)
+            print "ITER1 DONE"
             children = True
+            
         if self.__showLocalTime and (children):
             self.__createLeftoverWidget(self.item.getLeftoverPerc())
                 

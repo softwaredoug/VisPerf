@@ -2,6 +2,25 @@ import packRect
 import unittest
 from PySide.QtCore import QRectF
 
+class TestPercItem:
+    def __init__(self, perc):
+        self.perc = perc
+        
+    def getPercentage(self):
+        print "returning %lf" % self.perc
+        return self.perc
+    
+    def __str__(self):
+        return "Perc %lf" % self.perc
+    
+    def __repr__(self):
+        return "TestPercItem(%lf)" % self.perc
+    
+def TestPercItemsFromPercList(percList):
+    rVal = [TestPercItem(perc) for perc in percList]
+    print rVal
+    return rVal
+
 class TestPackedRect(unittest.TestCase):
     def __assertIsContainedWithin(self, parentRect, childRect):
         intersected = parentRect.intersected(childRect)
@@ -26,19 +45,18 @@ class TestPackedRect(unittest.TestCase):
         pass
     
     def __confirmGivesValidOutput(self, parentRect, percentages):
-        pR = packRect.PackedRect(parentRect)
-        currPerc = 0
+        percItems = TestPercItemsFromPercList(percentages)
+        pR = packRect.PackedRect(parentRect, percItems)
         sibls = []
         print "sum: %i" % sum(percentages) 
         try:
-            for currPerc in percentages:
-                nextChRect = pR.nextRect(currPerc)
+            for (chItem, nextChRect) in pR:
+               
                 self.__assertIsContainedWithin(parentRect, nextChRect)
-                self.__assertIsApproxPercOfArea(parentRect, nextChRect, currPerc)
+                self.__assertIsApproxPercOfArea(parentRect, nextChRect, chItem.getPercentage())
                 self.__assertDoesNotOverlapSiblings(parentRect, nextChRect, sibls)
                 sibls.append(nextChRect)
-                if pR.isEmpty():
-                    break
+
         except ValueError as e:
             raise self.fail(e)
         
@@ -55,6 +73,17 @@ class TestPackedRect(unittest.TestCase):
                                                       0.00515739009153,
                                                       17.1050448244,
                                                       1.95293171466])
+        self.__confirmGivesValidOutput(parentRect = QRectF(2,3,10,595),
+                                       percentages = [99.1963661775])
+        
+        self.__confirmGivesValidOutput(parentRect = QRectF(2.000000, 30.000000, 42.000000, 733.000000),
+                                        percentages = [68.3650150618, 29.5471070946])
+        
+        self.__confirmGivesValidOutput(parentRect = QRectF(2.000000, 30.000000, 16.000000, 664.000000),
+                                        percentages = [99.7644913773])
+        self.__confirmGivesValidOutput(parentRect = QRectF(2.000000, 30.000000, 42.000000, 733.000000), 
+                                       percentages = [68.36501506180534, 29.547107094629688, 2.0878778435649736])
+        
 
 if __name__ == '__main__':
     unittest.main()

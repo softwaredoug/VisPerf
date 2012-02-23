@@ -10,8 +10,8 @@ def validRectInAndReturned(fn):
             raise ValueError("Invalid rectangle given as argument: %s" % str(rect))
         rVal = fn(rect, *args, **kwargs)
         if not rVal.isValid():
-            raise ValueError("Operation produced an invalid rectangle: %s, args: %s, kwargs %s" % 
-                                (str(rVal), str(args), str(kwargs)))
+            raise ValueError("Operation produced an invalid rectangle: %s, rect: %s, args: %s, kwargs %s" % 
+                                (str(rVal), str(rect), str(args), str(kwargs)))
         return rVal
     return callWithValidRects
 
