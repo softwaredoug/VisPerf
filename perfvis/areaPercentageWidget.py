@@ -84,10 +84,16 @@ class EmptyAreaPercentageItem(AreaPercentageItem):
 
 class AreaPercentageWidget(QWidget):
     __pallete = (QColor(0xff, 0xdf, 0x80), QColor(0x9f, 0xff, 0x80), QColor(0x80, 0xff, 0x9f))
-    __reservedLabelY = 30
+    __reservedLabelY = 15
     __mouseOverColor = Qt.red
     __defaultPenColor = Qt.black
     __showLocalTime = True
+    
+    newItemSelect = Signal(str)
+    
+    @Slot(str)
+    def __onChildSelected(self, str):
+        self.newItemSelect.emit(str)
     
     def __createDefaultPen(self):
         pen = QPen()
@@ -119,10 +125,9 @@ class AreaPercentageWidget(QWidget):
         QWidget.__init__(self, parent)
         self.childAreaRects = []
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.item = item
-        self.label = self.__createLabel(
-                    parentRect, self.item.getName()) 
         self.pen = pen
+        self.chs = []
+        self.label = None
         self.brush = brush
         self.absDepth = absDepth
         if self.brush == None:
@@ -130,12 +135,7 @@ class AreaPercentageWidget(QWidget):
         if self.pen == None:
             self.pen = self.__createDefaultPen()
 
-        
-        if parentRect.width() > 4 and parentRect.height() > self.__reservedLabelY*2:
-            shrunkInRect = moveCornersTowardCenter(parentRect, 2, self.__reservedLabelY) 
-            self.packedRect = packRect.PackedRect(shrunkInRect, item.getChildren())
-            if not shrunkInRect.isEmpty():
-                self.__createChildWidgets()      
+        self.setItem(item, parentRect)
         
     def minimumSizeHint(self):
         return self.size()
@@ -168,16 +168,19 @@ class AreaPercentageWidget(QWidget):
                                         item=item)
         newChild.setGeometry(childRect)
         newChild.show()
+        newChild.newItemSelect.connect(self.__onChildSelected)
+        return newChild
         
     def __createLeftoverWidget(self, leftoverPerc):
         print "Leftover %lf" % leftoverPerc
-        leftoverRect = self.packedRect.nextRect(leftoverPerc)
-        leftoverRect = self.__adjustChildRect(leftoverRect)
-        if leftoverRect:
-            self.__createChildWidget(parent=self, 
-                                     childRect=leftoverRect, 
-                                     abDepth=self.absDepth+1,
-                                     item=EmptyAreaPercentageItem(leftoverPerc, "local"))
+        if not self.packedRect.isEmpty():
+            leftoverRect = self.packedRect.nextRect(leftoverPerc)
+            leftoverRect = self.__adjustChildRect(leftoverRect)
+            if leftoverRect:
+                self.chs.append(self.__createChildWidget(parent=self, 
+                                         childRect=leftoverRect, 
+                                         abDepth=self.absDepth+1,
+                                         item=EmptyAreaPercentageItem(leftoverPerc, "local")))
 
     
     def __createChildWidgets(self):
@@ -202,16 +205,25 @@ class AreaPercentageWidget(QWidget):
                 
         
         
-                         
-    
+    def setItem(self, item, parentRect = None):                     
+        self.item = item
+        print "create label text %s" % self.item.getName()
+        if self.label:
+            del self.label
+        for ch in self.chs:
+            del ch
+        self.label = self.__createLabel(
+                    parentRect, self.item.getName())         
+        if parentRect.width() > 4 and parentRect.height() > self.__reservedLabelY*2:
+            shrunkInRect = moveCornersTowardCenter(parentRect, 2, self.__reservedLabelY) 
+            self.packedRect = packRect.PackedRect(shrunkInRect, item.getChildren())
+            if not shrunkInRect.isEmpty():
+                self.__createChildWidgets()
+        self.update()      
+
     def mousePressEvent(self, mouseEvent):
         if mouseEvent.button() == Qt.MouseButton.LeftButton:
-            print "CLICKED name = %s geom %s " % (self.label.text(), self.geometry())
-            print "Children:"
-            for child in self.item.getChildren():
-                print "Name/Perc %s/%lf" % (child.getName(), child.getPercentage())
-            #self.__createChildWidgets()
-        self.update()
+            self.newItemSelect.emit(self.item.getName())
         
     def enterEvent(self, enterEvent):
         if self.pen != None:

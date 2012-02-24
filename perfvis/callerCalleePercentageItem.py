@@ -37,7 +37,7 @@ class CallerCalleePercentageItem(AreaPercentageItem):
     
     def getName(self):
         """ Get my name, how I should be labeled on the GUI """
-        return self.rootFunction + "\n%.0lf" % self.__myEntry().elapsedIncl
+        return self.rootFunction # + "\n%.0lf" % self.__myEntry().elapsedIncl
         
     def getChildren(self):
         """ Build a list of my children """

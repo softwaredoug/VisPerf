@@ -17,21 +17,33 @@ def tr(str):
       
 
 class Window(QWidget):
-    def __init__(self):
-        QWidget.__init__(self)
-        report = loadReport(sys.argv[1])
-        item = CallerCalleePercentageItem(report, "_wmainCRTStartup", 100.0)
+    def createAreaPercWidget(self, name):
+        item = CallerCalleePercentageItem(self.report, name, 100.0)
         #item = TestAreaPercentageItem(100.0)
         geom = QRect(0,0,1280,1000)
         self.renderArea = AreaPercentageWidget(geom, item=item)
         self.renderArea.setGeometry(geom)
-              
-        self.mainLayout = QHBoxLayout()
         self.mainLayout.addWidget(self.renderArea)
+              
+        self.renderArea.newItemSelect.connect(self.onNewItem)
+        self.renderArea.show()
+
+    
+    def __init__(self):
+        QWidget.__init__(self)
+        self.report = loadReport(sys.argv[1])
+        self.setWindowTitle(tr("Basic Drawing"))
+        self.mainLayout = QHBoxLayout()
+        self.createAreaPercWidget("")
         self.setLayout(self.mainLayout)
 
-        self.setWindowTitle(tr("Basic Drawing"))
-        
+    
+    @Slot(str)
+    def onNewItem(self, selectedItemName):
+        print "ON NEW ITEM %s" % selectedItemName
+        self.renderArea.deleteLater()
+        self.mainLayout.removeWidget(self.renderArea)
+        self.createAreaPercWidget(selectedItemName)
     
 
 if __name__ == '__main__':

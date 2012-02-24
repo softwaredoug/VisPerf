@@ -4,16 +4,20 @@ from entry import HdrFields
 class FunctionRecord(object):
 	""" A root record in the caller/callee report,
 		all the callers and callees """
-	def __init__(self, srcStr):
+	def __init__(self, csvLines):
 		self.entries = []
-		self.parse(srcStr)
+		self.parse(csvLines)
 		pass
 	
-	def parse(self, srcStr):
-		srcStr = srcStr.rstrip().lstrip()
-		self.entries = [Entry(line) for line in srcStr.split("\n")]
+	def parse(self, csvLines):
+		self.entries = [Entry(csvLines.pop(0))]
+		while (len(csvLines) > 0):
+			nextEntry = Entry(csvLines[0])
+			if nextEntry.type == "Root":
+				break
+			self.entries.append(nextEntry)
+			csvLines.pop(0)
 		self.postValidate()
-		pass
 	
 	def postValidate(self):
 		if len(self.getEntriesOfType("Root")) != 1:

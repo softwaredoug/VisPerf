@@ -2,11 +2,6 @@ from funcRecord import FunctionRecord
 from entry import HdrFields
 from entry import Entry
 
-def createFunctionRecord(srcStr):
-	rec = FunctionRecord(srcStr)
-	fName = rec.getRoot().functionName
-	return (fName, rec)
-	
 
 class Report:
 	def __init__(self, srcStr):
@@ -14,13 +9,15 @@ class Report:
 		self.parse(srcStr)
 		
 	
-	def parse(self, srcStr):
+	def parse(self, srcCsvLines):
 		# Decode around a "Root" string, but add back in that
 		# Root string
-		funcRecordStrs = ["\"Root\"" + currStr for currStr in srcStr.split("\"Root\"")][1:]
-		#from funcRecord import FunctionRecord 
-		mapRes = map(createFunctionRecord, funcRecordStrs)
-		self.funcRecords = dict(mapRes)
+		self.funcRecords = {}
+		while len(srcCsvLines) > 0:
+			fRecord = FunctionRecord(srcCsvLines)
+			rootName = fRecord.getRoot().functionName
+			print "Inserting %s" % rootName
+			self.funcRecords[rootName] = fRecord
 		
 	def getAllRecords(self):
 		return self.funcRecords
@@ -41,4 +38,7 @@ class Report:
 
 def loadReport(fName):
 	f = open(fName)
-	return Report(f.read()) 
+	import csv
+	rdr = csv.reader(f)
+	lines = [line for line in rdr]
+	return Report(lines[1:]) 

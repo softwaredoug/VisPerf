@@ -134,7 +134,7 @@ class PackedRect:
             leftoverRect with whats leftover """
         self.percs.append(percentage)
         if self.isEmpty():
-            raise ValueError("This guy is empty")
+            raise ValueError("This guy is empty pR: %s perc: %s" % (self.parentRect, self.percs))
         neededArea = (self.parentRect.width() * self.parentRect.height()) * (percentage/100.0)
         if self.__isNeededAreaMoreThanLeftover(neededArea):
             return self.__giveUpAllRemainingArea()

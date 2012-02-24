@@ -83,6 +83,8 @@ class TestPackedRect(unittest.TestCase):
                                         percentages = [99.7644913773])
         self.__confirmGivesValidOutput(parentRect = QRectF(2.000000, 30.000000, 42.000000, 733.000000), 
                                        percentages = [68.36501506180534, 29.547107094629688, 2.0878778435649736])
+        self.__confirmGivesValidOutput(parentRect = QRectF(2.000000, 30.000000, 564.000000, 733.000000), 
+                                       percentages = [86.78029430348707, 13.217538681222926, 0.0021670152900036726, 0.0])
         
 
 if __name__ == '__main__':

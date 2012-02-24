@@ -4,13 +4,24 @@ Created on Jan 25, 2012
 @author: Doug
 '''
 import unittest
+from StringIO import StringIO
+import csv
+
+def strToCsvLines(aStr):
+    f = StringIO(aStr)
+    testRecCsv = csv.reader(f)
+    #for line in testRecCsv:
+    #    print line 
+    lines = [line for line in testRecCsv]
+
+    return lines
 
 
 class BasicFunctionalityTests(unittest.TestCase):
 
 
     def setUp(self):
-        from perfvis.callercallee.report import Report
+        from report import Report
         basicReport = """"Root","@_RTC_CheckStackVars@8",333,333,333,333,0.00,0.00,0.00,0.00,63,63,333,333,333,333,333,333,0,333,333,0,333,333,1,"",0,"perfPlay.exe","C:\Users\Doug\Documents\Visual Studio 2010\Projects\perfPlay\Debug\perfPlay.exe",0x012F1456,"@_RTC_CheckStackVars@8","perfPlay.exe",5068,
 "Caller","_wmain",333,333,333,333,0.00,0.00,0.00,0.00,63,63,0,333,333,0,333,333,0,333,333,0,333,333,1,"c:\users\doug\documents\visual studio 2010\projects\perfplay\perfplay\perfplay.cpp",87,"perfPlay.exe","C:\Users\Doug\Documents\Visual Studio 2010\Projects\perfPlay\Debug\perfPlay.exe",0x012F11C2,"@_RTC_CheckStackVars@8","perfPlay.exe",5068,
 "Root","___CxxSetUnhandledExceptionFilter",37155,27,37155,27,0.00,0.00,0.00,0.00,189,189,37155,37155,37155,27,27,27,0,37155,37155,0,27,27,1,"f:\dd\vctools\crt_bld\self_x86\crt\prebuild\eh\unhandld.cpp",86,"perfPlay.exe","C:\Users\Doug\Documents\Visual Studio 2010\Projects\perfPlay\Debug\perfPlay.exe",0x012F25C3,"___CxxSetUnhandledExceptionFilter","perfPlay.exe",5068,
@@ -25,7 +36,7 @@ class BasicFunctionalityTests(unittest.TestCase):
 "Callee","QueryPerformanceCounter",531,531,531,531,0.00,0.00,0.00,0.00,0,0,0,531,531,0,531,531,0,531,531,0,531,531,1,"",0,"kernel32.dll","C:\Windows\syswow64\kernel32.dll",0x761D1725,"___security_init_cookie","perfPlay.exe",5068,
 "Root","___set_app_type",669,669,669,669,0.00,0.00,0.00,0.00,0,0,669,669,669,669,669,669,0,669,669,0,669,669,1,"f:\dd\vctools\crt_bld\self_x86\crt\src\errmode.c",87,"MSVCR100D.dll","C:\Windows\system32\MSVCR100D.dll",0x60245130,"___set_app_type","perfPlay.exe",5068,
 "Caller","pre_c_init",669,669,669,669,0.00,0.00,0.00,0.00,0,0,0,669,669,0,669,669,0,669,669,0,669,669,1,"f:\dd\vctools\crt_bld\self_x86\crt\src\crtexe.c",197,"perfPlay.exe","C:\Users\Doug\Documents\Visual Studio 2010\Projects\perfPlay\Debug\perfPlay.exe",0x012F15AC,"___set_app_type","perfPlay.exe",5068,"""
-        self.report = Report(basicReport) 
+        self.report = Report(strToCsvLines(basicReport)) 
 
 
     def tearDown(self):
@@ -34,9 +45,15 @@ class BasicFunctionalityTests(unittest.TestCase):
 
     def testGetAll(self):
         funcRecords = self.report.getAllRecords()
-        from perfvis.callercallee.entry import HdrFields
+        from entry import HdrFields
+        print "Function is %s " % repr(funcRecords)
+        print "Function is " + funcRecords[0].getRoot().getField(HdrFields.functionName)
+        assert len
         assert funcRecords[0].getRoot().getField(HdrFields.functionName) == "@_RTC_CheckStackVars@8"
+        
 
+class TestDuplicateFunctionNamesTest(unittest.TestCase):
+    pass
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
