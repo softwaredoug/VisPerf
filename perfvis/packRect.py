@@ -57,7 +57,7 @@ class PackedRect:
         elif currPercentage > 0:
             magnitude = self.lastFlipPercentage / currPercentage
         if magnitude > 3.0:
-            self.currDir = Direction.flip(self.currDir)
+            #self.currDir = Direction.flip(self.currDir)
             self.lastFlipPercentage = currPercentage
             
     def isEmpty(self):
@@ -108,7 +108,6 @@ class PackedRect:
             print "ParentRect %s" % repr(self.parentRect)
             print "Percentages %s" % repr(self.percs)
             assert False
-        print "Leftover: %s Valid? %i" % (self.leftoverRect, self.leftoverRect.isValid())
         
         newRect.setHeight(height)
         newRect.setWidth(width)

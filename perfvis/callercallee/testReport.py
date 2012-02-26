@@ -127,6 +127,15 @@ class SingleFRecordCase(TestReportTestCase):
         self.assertReportHas("foo(int,double)")
         self.assertElapdeInclIsN("foo(int,double)", N=333)        
         self.assertElapdeExclIsN("foo(int,double)", N=333)
+        
+    def testSampleReport(self):
+        self.usingReport("""Type,Function Name,Inclusive Samples,Exclusive Samples,Inclusive Samples %,Exclusive Samples %,Source File,Function Line Number,Module Name,Module Path,Function Address,Root Function Name,Process Name,Process ID,
+"Root","sampledFunc",100,50,0.01,0.01,"",0,"WS2HELP.dll","C:\WINDOWS\system32\WS2HELP.dll",0x71AA149E,"$$VProc_ImageExportDirectory","foo.exe",3540,
+"Caller","[MSWSOCK.dll]",1,1,0.01,0.01,"<Unknown>",0,"MSWSOCK.dll","C:\WINDOWS\system32\MSWSOCK.dll",0x71A50000,"$$VProc_ImageExportDirectory","foo.exe",3540,"""
+                    )
+        self.assertFunctionAtAddress(function = "sampledFunc", address = 0x71AA149E)
+        self.assertElapdeInclIsN("sampledFunc", N=100)        
+        self.assertElapdeExclIsN("sampledFunc", N=50)
 
         
         

@@ -2,13 +2,22 @@ from labeledCsvEntry import LabeledCsvEntry
 
 class Entry(object):
 	
+	def __findOneOfOrThrow(self, oneMustBePresent):
+		for key in oneMustBePresent:
+			if key in self.csvEntry.fields:
+				return key
+		raise ValueError("No inclusive or exclusive time could be found")
+		
+	
 	def validateReqFieldsPresent(self):
-		reqKeys = ["Function Name", "Type", "Elapsed Inclusive Time", 
-				   "Elapsed Exclusive Time", "Function Address"]
+		reqKeys = ["Function Name", "Type", "Function Address"]
 		for key in reqKeys:
 			if not key in self.csvEntry.fields:
 				print repr(self.csvEntry.fields)
-				raise ValueError("Csv input did not appear to have a field for %s" % key)		
+				raise ValueError("Csv input did not appear to have a field for %s" % key)
+		
+		self.inclusiveLabel = self.__findOneOfOrThrow(["Elapsed Inclusive Time", "Inclusive Samples"])
+		self.exclusiveLabel = self.__findOneOfOrThrow(["Elapsed Exclusive Time", "Exclusive Samples"])
 	
 	def __init__(self, csvLine, header):
 		self.csvEntry = LabeledCsvEntry(header, csvLine)
@@ -21,10 +30,10 @@ class Entry(object):
 		return self.csvEntry.fields["Type"]
 	
 	def getElapsedIncl(self):
-		return float(self.csvEntry.fields["Elapsed Inclusive Time"])
+		return float(self.csvEntry.fields[self.inclusiveLabel])
 	
 	def getElapsedExcl(self):
-		return float(self.csvEntry.fields["Elapsed Exclusive Time"])
+		return float(self.csvEntry.fields[self.exclusiveLabel])
 	
 	def getFunctionAddr(self):
 		return int(self.csvEntry.fields["Function Address"], base=16)

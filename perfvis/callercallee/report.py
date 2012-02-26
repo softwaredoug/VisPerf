@@ -1,6 +1,4 @@
 from funcRecord import FunctionRecord
-from entry import Entry
-
 
 class Report:
 	def __init__(self, csvData, csvHeader):
@@ -15,7 +13,6 @@ class Report:
 		while len(csvData) > 0:
 			fRecord = FunctionRecord(csvData, csvHeader)
 			funcAddr = fRecord.getRoot().getFunctionAddr()
-			print "Inserting %s" % funcAddr
 			self.funcRecords[funcAddr] = fRecord
 		
 	def getAllRecords(self):
