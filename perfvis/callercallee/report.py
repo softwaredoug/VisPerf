@@ -40,4 +40,4 @@ def loadReport(fName):
 	import csv
 	rdr = csv.reader(f)
 	lines = [line for line in rdr]
-	return Report(allCsvLines = lines[1:], csvHeader = lines[0]) 
+	return Report(csvData = lines[1:], csvHeader = lines[0]) 

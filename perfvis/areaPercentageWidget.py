@@ -39,33 +39,19 @@ class AreaPercentageItem(object):
         raise NotImplementedError
     
     def getLeftoverPerc(self):
+        """ Percentage not allocated to children"""
         raise NotImplementedError
     
-class TestAreaPercentageItem(AreaPercentageItem):
-    def __init__(self, perc):
-        AreaPercentageItem.__init__(self)
-        self.perc = perc
-    
-    def getPercentage(self): 
-        return self.perc
-    
-    def getName(self):
-        return "Name"
-    
-    def getChildren(self):
-        return [TestAreaPercentageItem(50), 
-                TestAreaPercentageItem(20),
-                TestAreaPercentageItem(10),
-                TestAreaPercentageItem(5)]
-    
-    def getLeftoverPerc(self):
-        return 0.1
+    def getId(self):
+        """ Get a number that uniquely identifies me"""
+        raise NotImplementedError
     
 class EmptyAreaPercentageItem(AreaPercentageItem):
-    def __init__(self, perc,name):
+    def __init__(self, perc,name,id):
         AreaPercentageItem.__init__(self)
         self.perc = perc
         self.name = name
+        self.funcAddr = id
 
     def getPercentage(self): 
         return self.perc
@@ -78,6 +64,9 @@ class EmptyAreaPercentageItem(AreaPercentageItem):
     
     def getLeftoverPerc(self):
         return 100.0
+    
+    def  getId(self):
+        return self.funcAddr
 
         
 
@@ -180,7 +169,7 @@ class AreaPercentageWidget(QWidget):
                 self.chs.append(self.__createChildWidget(parent=self, 
                                          childRect=leftoverRect, 
                                          abDepth=self.absDepth+1,
-                                         item=EmptyAreaPercentageItem(leftoverPerc, "local")))
+                                         item=EmptyAreaPercentageItem(leftoverPerc, "local", id = 0)))
 
     
     def __createChildWidgets(self):

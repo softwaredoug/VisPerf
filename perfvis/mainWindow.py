@@ -6,7 +6,7 @@ Created on Feb 1, 2012
 from PySide.QtGui import *
 from PySide.QtCore import *
 import sys
-from areaPercentageWidget import AreaPercentageWidget, TestAreaPercentageItem
+from areaPercentageWidget import AreaPercentageWidget
 from callerCalleePercentageItem import CallerCalleePercentageItem
 from callercallee.report import loadReport
 def tr(str):
@@ -17,8 +17,8 @@ def tr(str):
       
 
 class Window(QWidget):
-    def createAreaPercWidget(self, name):
-        item = CallerCalleePercentageItem(self.report, name, 100.0)
+    def createAreaPercWidget(self, funcAddr):
+        item = CallerCalleePercentageItem(self.report, funcAddr, 100.0)
         #item = TestAreaPercentageItem(100.0)
         geom = QRect(0,0,1280,1000)
         self.renderArea = AreaPercentageWidget(geom, item=item)
@@ -34,16 +34,16 @@ class Window(QWidget):
         self.report = loadReport(sys.argv[1])
         self.setWindowTitle(tr("Basic Drawing"))
         self.mainLayout = QVBoxLayout()
-        self.createAreaPercWidget("")
+        self.createAreaPercWidget(0x1BD42F54)
         self.setLayout(self.mainLayout)
 
     
     @Slot(str)
-    def onNewItem(self, selectedItemName):
-        print "ON NEW ITEM %s" % selectedItemName
+    def onNewItem(self, selectedItemFAddr):
+        print "ON NEW ITEM %08x" % selectedItemFAddr
         self.renderArea.deleteLater()
         self.mainLayout.removeWidget(self.renderArea)
-        self.createAreaPercWidget(selectedItemName)
+        self.createAreaPercWidget(selectedItemFAddr)
     
 
 if __name__ == '__main__':

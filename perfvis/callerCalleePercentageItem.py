@@ -12,23 +12,23 @@ def totRecordTime(fRecord):
         the root function + the inclusive time of the called functions
         in an ideal world, this sum should = the root's elapsed incl 
     """
-    totTime = fRecord.getRoot().elapsedExcl
+    totTime = fRecord.getRoot().getElapsedExcl()
     for rec in fRecord.getCallees():
-        totTime += rec.elapsedIncl
+        totTime += rec.getElapsedIncl()
     return totTime
 
 class CallerCalleePercentageItem(AreaPercentageItem):
-    def __init__(self, report, rootFunction, perc):
+    def __init__(self, report, id, perc):
         AreaPercentageItem.__init__(self)
         self.report = report
-        self.rootFunction = rootFunction
         self.perc = perc
+        self.funcAddr = id
         
     def __myRec(self):
-        return self.report.getRecord(self.rootFunction)
+        return self.report.getRecord(self.funcAddr)
 
     def __myEntry(self):
-        return self.report.getRecord(self.rootFunction).getRoot()
+        return self.report.getRecord(self.funcAddr).getRoot()
 
     
     def getPercentage(self):
@@ -37,35 +37,39 @@ class CallerCalleePercentageItem(AreaPercentageItem):
     
     def getName(self):
         """ Get my name, how I should be labeled on the GUI """
-        return self.rootFunction # + "\n%.0lf" % self.__myEntry().elapsedIncl
+        return self.__myEntry().getFunctionName()
         
     def getChildren(self):
         """ Build a list of my children """
         myRec = self.__myRec()
         totTime = totRecordTime(myRec)
-        exclPercentage = (myRec.getRoot().elapsedExcl / totTime) * 100.0
+        exclPercentage = (myRec.getRoot().getElapsedExcl() / totTime) * 100.0
         children = []
         for callee in myRec.getCallees():
-            perc = (callee.elapsedIncl / totTime) * 100.0
+            perc = (callee.getElapsedIncl() / totTime) * 100.0
             children.append(
                             CallerCalleePercentageItem(self.report, 
-                                                       callee.functionName,
-                                                       perc))
+                                                       callee.getFunctionAddr(),
+                                                       perc)
+                            )
         totPerc = (exclPercentage + sum([item.getPercentage() for item in children]))
         assert totPerc < 100.0001
         return children
+   
+    def getLeftoverPerc(self):
+        """ Return percentage not allocated to my children"""
+        myRec = self.report.getRecord(self.funcAddr)
+        totTime = totRecordTime(myRec)
+        return (myRec.getRoot().getElapsedExcl() / totTime) * 100.0
+    
+    def getId(self):
+        """ Return unique integer identifier for this item """
+        return self.funcAddr
+
     
     def __repr__(self):
         return "CallerCalleePercentageItem(%s, %lf)" % (self.rootFunction, self.perc)
             
-        
-        
-        #sum the callees and the 
-    
-    def getLeftoverPerc(self):
-        myRec = self.report.getRecord(self.rootFunction)
-        totTime = totRecordTime(myRec)
-        return (myRec.getRoot().elapsedExcl / totTime) * 100.0
 
         
         
