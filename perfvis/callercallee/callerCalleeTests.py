@@ -18,13 +18,13 @@ class Test(unittest.TestCase):
 
 
     def testCallerCalleeEntry(self):
-        from perfvis.callercallee.entry import HdrFields
+        from perfvis.callercallee.entry import InstrHdrFields
         from perfvis.callercallee.entry import Entry
         testEntry = "\"Root\",\"__RTC_Shutdown\",1080,210,1080,210,0.00,0.00,0.00,0.00,315,252,1080,1080,1080,210,210,210,0,1080,1080,0,210,210,1,"",0,\"perfPlay.exe\",\"C:\Users\Doug\Documents\Visual Studio 2010\Projects\perfPlay\Debug\perfPlay.exe\",0x012F1534,\"__RTC_Shutdown\",\"perfPlay.exe\",5068,"
         entry = Entry(testEntry)
-        assert entry.getField(HdrFields.fieldType) == "Root"
-        assert entry.getField(HdrFields.functionName) == "__RTC_Shutdown"
-        assert entry.getField(HdrFields.elapsedIncl) == 1080
+        assert entry.getField(InstrHdrFields.fieldType) == "Root"
+        assert entry.getField(InstrHdrFields.functionName) == "__RTC_Shutdown"
+        assert entry.getField(InstrHdrFields.elapsedIncl) == 1080
         
     def testCallerCalleeFuncRecord(self):
         pass

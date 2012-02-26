@@ -1,19 +1,18 @@
 from entry import Entry
-from entry import HdrFields
 
 class FunctionRecord(object):
 	""" A root record in the caller/callee report,
 		all the callers and callees """
-	def __init__(self, csvLines):
+	def __init__(self, csvLines, csvHeader):
 		self.entries = []
-		self.parse(csvLines)
+		self.parse(csvLines, csvHeader)
 		pass
 	
-	def parse(self, csvLines):
-		self.entries = [Entry(csvLines.pop(0))]
+	def parse(self, csvLines, csvHeader):
+		self.entries = [Entry(csvLines.pop(0), csvHeader)]
 		while (len(csvLines) > 0):
-			nextEntry = Entry(csvLines[0])
-			if nextEntry.type == "Root":
+			nextEntry = Entry(csvLines[0], csvHeader)
+			if nextEntry.getType() == "Root":
 				break
 			self.entries.append(nextEntry)
 			csvLines.pop(0)
@@ -25,7 +24,7 @@ class FunctionRecord(object):
 			raise ValueError("You attempted to construct around more than 1 Root entry")
 	
 	def getEntriesOfType(self, typeName):
-		typeMatch = lambda ent: ent.type == typeName
+		typeMatch = lambda ent: ent.getType() == typeName
 		return filter(typeMatch, self.entries)
 	
 	def getCallers(self):

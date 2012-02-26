@@ -1,32 +1,41 @@
-class HdrFields:
-	""" Type as taken from the header in the caller/callee report"""
-	fieldType = 0
-	functionName = 1
-	elapsedIncl = 2
-	elapsedExcl = 3
-	applicationIncl = 4
-	applicationExcl = 5
-	
-	minField = fieldType
-	maxField = applicationExcl
+from labeledCsvEntry import LabeledCsvEntry
 
 class Entry(object):
 	
-	def __init__(self, csvLine):
-		self.fields = csvLine
-		self.type = self.fields[HdrFields.fieldType]
-		self.functionName = self.fields[HdrFields.functionName]
-		self.elapsedIncl = float(self.fields[HdrFields.elapsedIncl])
-		self.elapsedExcl = float(self.fields[HdrFields.elapsedExcl])
+	def validateReqFieldsPresent(self):
+		reqKeys = ["Function Name", "Type", "Elapsed Inclusive Time", 
+				   "Elapsed Exclusive Time", "Function Address"]
+		for key in reqKeys:
+			if not key in self.csvEntry.fields:
+				print repr(self.csvEntry.fields)
+				raise ValueError("Csv input did not appear to have a field for %s" % key)		
+	
+	def __init__(self, csvLine, header):
+		self.csvEntry = LabeledCsvEntry(header, csvLine)
+		self.validateReqFieldsPresent()	
 		
-	def getField(self, idx):
-		return self.fields[idx]
-		
+	def getFunctionName(self):
+		return self.csvEntry.fields["Function Name"]
+	
+	def getType(self):
+		return self.csvEntry.fields["Type"]
+	
+	def getElapsedIncl(self):
+		return float(self.csvEntry.fields["Elapsed Inclusive Time"])
+	
+	def getElapsedExcl(self):
+		return float(self.csvEntry.fields["Elapsed Exclusive Time"])
+	
+	def getFunctionAddr(self):
+		return int(self.csvEntry.fields["Function Address"], base=16)
+	
 	def __str__(self):
 		return "%s,Function: %s" \
-			% (self.type, 
-				self.functionName)
+			% (self.getType(), 
+				self.getFunctionName())
 	
 	def __repr__(self):
 		return 'Entry(["%s","%s",%lf,%lf])' % \
-			(self.type, self.functionName, self.elapsedIncl, self.elapsedExcl)
+			(self.getType(), self.getFunctionName(), 	 self.getElapsedIncl(), self.getElapsedExcl())
+			
+			

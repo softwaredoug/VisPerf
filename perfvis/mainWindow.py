@@ -33,7 +33,7 @@ class Window(QWidget):
         QWidget.__init__(self)
         self.report = loadReport(sys.argv[1])
         self.setWindowTitle(tr("Basic Drawing"))
-        self.mainLayout = QHBoxLayout()
+        self.mainLayout = QVBoxLayout()
         self.createAreaPercWidget("")
         self.setLayout(self.mainLayout)
 

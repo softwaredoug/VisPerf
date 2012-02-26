@@ -1,29 +1,28 @@
 from funcRecord import FunctionRecord
-from entry import HdrFields
 from entry import Entry
 
 
 class Report:
-	def __init__(self, srcStr):
+	def __init__(self, csvData, csvHeader):
 		self.funcRecords = {}
-		self.parse(srcStr)
+		self.parse(csvData, csvHeader)
 		
 	
-	def parse(self, srcCsvLines):
+	def parse(self, csvData, csvHeader):
 		# Decode around a "Root" string, but add back in that
 		# Root string
 		self.funcRecords = {}
-		while len(srcCsvLines) > 0:
-			fRecord = FunctionRecord(srcCsvLines)
-			rootName = fRecord.getRoot().functionName
-			print "Inserting %s" % rootName
-			self.funcRecords[rootName] = fRecord
+		while len(csvData) > 0:
+			fRecord = FunctionRecord(csvData, csvHeader)
+			funcAddr = fRecord.getRoot().getFunctionAddr()
+			print "Inserting %s" % funcAddr
+			self.funcRecords[funcAddr] = fRecord
 		
 	def getAllRecords(self):
 		return self.funcRecords
 	
-	def getRecord(self, name):
-		return self.funcRecords[name]
+	def getRecord(self, funcAddr):
+		return self.funcRecords[funcAddr]
 	
 	def getRecordsWithLargeCallees(self):
 		rVal = []
@@ -41,4 +40,4 @@ def loadReport(fName):
 	import csv
 	rdr = csv.reader(f)
 	lines = [line for line in rdr]
-	return Report(lines[1:]) 
+	return Report(allCsvLines = lines[1:], csvHeader = lines[0]) 
