@@ -58,7 +58,6 @@ class Window(QWidget):
     
     @Slot(int)
     def onNewItemSelected(self, selectedItemFAddr):
-        print "ON NEW ITEM %08x" % selectedItemFAddr
         self.renderArea.deleteLater()
         self.mainLayout.removeWidget(self.renderArea)
         self.selectedAddr = selectedItemFAddr

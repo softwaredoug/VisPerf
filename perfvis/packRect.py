@@ -17,10 +17,11 @@ class PackedRect:
         area of the starting rect. Repeat for p1,p2...
         as long as there continues to be room in the parent rect"""  
     
-    def __init__(self, parentRect, percentageItems):
+    def __init__(self, parentRect, percentageItems, initialDir = Direction.Horizontal):
         self.parentRect = self.leftoverRect = QRectF()
         self.percItems = sorted(percentageItems, key=lambda pItem: pItem.getPercentage(), reverse = True)
         self.parentRect = QRectF(parentRect)
+        self.initialDir = initialDir
         self.reset()
         self.percs = []
         
@@ -47,7 +48,7 @@ class PackedRect:
         import copy
         self.lastFlipPercentage = 100
         self.currPercItem = 0
-        self.currDir = Direction.Horizontal
+        self.currDir = self.initialDir
         self.leftoverRect = copy.deepcopy(self.parentRect)
         
     def updateDirection(self, currPercentage):
@@ -56,8 +57,8 @@ class PackedRect:
             magnitude = currPercentage / self.lastFlipPercentage
         elif currPercentage > 0:
             magnitude = self.lastFlipPercentage / currPercentage
-        if magnitude > 3.0:
-            #self.currDir = Direction.flip(self.currDir)
+        if magnitude > 1.5:
+            self.currDir = Direction.flip(self.currDir)
             self.lastFlipPercentage = currPercentage
             
     def isEmpty(self):
@@ -95,7 +96,7 @@ class PackedRect:
     @validRectReturned    
     def __giveUpSomeLeftoverSpace(self, neededArea):
         """ Sacrifice some leftover space to represent the neededARea"""
-        giveUpFns = [self.__giveUpLeftoverWidth, self.__giveUpLeftoverWidth] 
+        giveUpFns = [self.__giveUpLeftoverWidth, self.__giveUpLeftoverHeight] 
         fn = giveUpFns[self.currDir]
         newRect = QRectF()
         newRect.setTopLeft(self.leftoverRect.topLeft())
@@ -134,6 +135,8 @@ class PackedRect:
 
     def __str__(self):
         return self.__repr__() + " Leftover(%s)" % repr(self.leftoverRect)
+    
+emptyPackedRect = PackedRect(QRect(), [])
     
 def childRects(packedRect, percentages):
     """ Given percentages and a parent packed rect,
