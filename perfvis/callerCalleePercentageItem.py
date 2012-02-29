@@ -16,6 +16,17 @@ def totRecordTime(fRecord):
     for rec in fRecord.getCallees():
         totTime += rec.getElapsedIncl()
     return totTime
+    
+def escapeHtml(text):
+    """ taken from http://wiki.python.org/moin/EscapingHtml """
+    return text
+    html_escape_table = {",": ", ","&": "&amp;",'"': "&quot;","'": "&apos;",">": "&gt;","<": "&lt;",}
+    return "".join(html_escape_table.get(c,c) for c in text)
+    
+def shortenCppFunc(str):
+    withoutParams = str.split("(")
+    return withoutParams[0]
+    
 
 class CallerCalleePercentageItem(AreaPercentageItem):
     def __init__(self, report, id, perc):
@@ -34,10 +45,52 @@ class CallerCalleePercentageItem(AreaPercentageItem):
     def getPercentage(self):
         """ Get my percentage in the parent """
         return self.perc
-    
+        
+    def getBasicName(self):
+        myEntry = self.__myEntry()
+        shortened = shortenCppFunc(myEntry.getFunctionName())
+        return shortened[-100:]
+        
     def getName(self):
         """ Get my name, how I should be labeled on the GUI """
-        return self.__myEntry().getFunctionName()
+        myEntry = self.__myEntry()
+        baseName = self.getBasicName()
+        overallPerc = myEntry.getOverallPercentage()
+        rVal =  baseName + " - " + str(self.getPercentage())[:4] + "(" + str(overallPerc)[:4] + ")"
+        return rVal[-100:]
+        
+    def getOverallPerc(self):
+        myEntry = self.__myEntry()
+        return myEntry.getOverallPercentage()
+        
+    def getRtfDescription(self):
+        myEntry = self.__myEntry()
+        rec = self.__myRec()
+        addr = myEntry.getFunctionAddr()
+        
+        callers = sorted(rec.getCallers(), key = lambda e: e.getOverallPercentage(), reverse=True)
+        calers = callers[:10]
+        callerStr = "".join(["(%2.1lf) %s<br>" % 
+                                (caller.getOverallPercentage(),
+                                 escapeHtml(shortenCppFunc(caller.getFunctionName())[-100:])) for caller in callers])
+        
+        children = self.getChildren()
+        callees = sorted(children, key = lambda e: e.getPercentage(), reverse=True)
+        calleeStr = "".join(["%2.1lf (%2.1lf) %s<br>" % 
+                                (callee.getPercentage(),
+                                 callee.getOverallPerc(),
+                                 escapeHtml(callee.getBasicName())) for callee in callees])
+        
+        rtfStr = """<b>Function (Full Name)</b>:<br>
+                    %s<br>
+                    <b>Callers</b>:<br>
+                    %s<br>
+                    <b>Callees</b>:<br>
+                    %s<br>
+                    <b>Local Percentage</b><br>
+                    %2.1lf<br>
+                    """ % (escapeHtml(myEntry.getFunctionName()), callerStr, calleeStr, self.getLeftoverPerc())
+        return rtfStr
         
     def getChildren(self):
         """ Build a list of my children """

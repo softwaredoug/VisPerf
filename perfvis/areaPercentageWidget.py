@@ -33,6 +33,10 @@ class AreaPercentageItem(object):
         """ Get my name, how I should be labeled on the GUI """
         raise NotImplementedError
         
+    def getRtfDescription(self):
+        """ Get a rich text description used for a tool-tip"""
+        raise NotImplementedException
+        
     def getChildren(self):
         """ Get a list of my children """
         raise NotImplementedError
@@ -58,6 +62,9 @@ class EmptyAreaPercentageItem(AreaPercentageItem):
     def getName(self):
         return self.name
     
+    def getRtfDescription(self):
+        return self.name
+    
     def getChildren(self):
         return []
     
@@ -71,14 +78,14 @@ class EmptyAreaPercentageItem(AreaPercentageItem):
 
 
 class AreaPercentageWidget(QWidget):
-    __pallete = (QColor(0xff, 0xdf, 0x80), QColor(0x9f, 0xff, 0x80), QColor(0x80, 0xff, 0x9f))
+    __pallete = (QColor(0xff, 0xdf, 0x80), QColor(0x9f, 0xff, 0x80), QColor(0x70, 0xdb, 0xf5), QColor(0xff,0x70,0xdb))
     __reservedLabelY = 10
     __mouseOverColor = Qt.black
     __defaultPenColor = Qt.gray
     __showLocalTime = True
-    __childShrinkIn = (3,3)
-    __maxDepth = 25
-    __weakDepth = 5
+    __childShrinkIn = (10,10)
+    __maxDepth = 2
+    __weakDepth = 3
     newItemSelect = Signal(int)
     
     @Slot(str)
@@ -93,16 +100,17 @@ class AreaPercentageWidget(QWidget):
         elif self.absDepth > self.__weakDepth / 2:
             pen.setWidth(2)
         else:
-            pen.setWidth(3)
+            pen.setWidth(4)
         return pen
 
-        
+	
     def __createDefaultBrush(self,parentRect):
-        brush = QRadialGradient()
-        brush.setRadius(parentRect.width() + parentRect.height())
-        brush.setFocalPoint(parentRect.center())
+        if self.absDepth % 2 == 1:
+            brush = QLinearGradient(parentRect.topLeft(), parentRect.topRight())
+        else:
+            brush = QLinearGradient(parentRect.bottomRight(), parentRect.bottomLeft())
         brush.setColorAt(0.0, Qt.white)
-        brush.setColorAt(0.5, self.__pallete[self.absDepth % 3])
+        brush.setColorAt(0.5, self.__pallete[self.absDepth % len(self.__pallete)])
         return brush  
     
     def __createLabel(self, parentRect, text):
@@ -202,6 +210,7 @@ class AreaPercentageWidget(QWidget):
         
     def setItem(self, item, parentRect = None):                     
         self.item = item
+        self.setToolTip(item.getRtfDescription())
         if self.label:
             del self.label
         for ch in self.chs:
@@ -249,6 +258,7 @@ class AreaPercentageWidget(QWidget):
         
         painter = QPainter(self)
         painter.setPen(pen)
+        painter.setBackgroundMode(Qt.TransparentMode)
         
         if self.brush != None:
             painter.setBrush(self.brush)
