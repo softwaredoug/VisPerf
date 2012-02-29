@@ -82,9 +82,9 @@ class AreaPercentageWidget(QWidget):
     __reservedLabelY = 10
     __mouseOverColor = Qt.black
     __defaultPenColor = Qt.gray
-    __showLocalTime = True
+    __showLocalTime = False
     __childShrinkIn = (10,10)
-    __maxDepth = 2
+    __maxDepth = 4
     __weakDepth = 3
     newItemSelect = Signal(int)
     

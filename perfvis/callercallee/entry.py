@@ -18,6 +18,7 @@ class Entry(object):
         
         self.inclusiveLabel = self.__findOneOfOrThrow(["Elapsed Inclusive Time", "Inclusive Samples"])
         self.exclusiveLabel = self.__findOneOfOrThrow(["Elapsed Exclusive Time", "Exclusive Samples"])
+        self.overallLabel = self.__findOneOfOrThrow(["Elapsed Inclusive Time %", "Inclusive Samples %"])
     
     def __init__(self, csvLine, header):
         self.csvEntry = LabeledCsvEntry(header, csvLine)
@@ -30,7 +31,7 @@ class Entry(object):
         return self.csvEntry.fields["Type"]
         
     def getOverallPercentage(self):
-        return float(self.csvEntry.fields["Inclusive Samples %"])
+        return float(self.csvEntry.fields[self.overallLabel])
     
     def getElapsedIncl(self):
         return float(self.csvEntry.fields[self.inclusiveLabel])
