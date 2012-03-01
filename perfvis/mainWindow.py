@@ -21,6 +21,7 @@ def tr(str):
 
 class Window(QWidget):
     def createAreaPercWidget(self):
+        print "Creating widget for %08x" % self.selectedAddr
         item = CallerCalleePercentageItem(self.report, self.selectedAddr, 100.0)
         #item = TestAreaPercentageItem(100.0)
         geom = QRect(0,0,1024,780)
@@ -28,21 +29,22 @@ class Window(QWidget):
 
         self.mainLayout.addWidget(self.renderArea)
               
-        self.renderArea.newItemSelect.connect(self.onNewItemSelected)
+        self.renderArea.newItemSelect.connect(self.onNewItemSelectedFromAreaPWidget)
         #self.renderArea.show()
         
     def setupControls(self):
+        import cppName
         sortedVals = sorted(self.report.getAllRecords().values(),
                              key = lambda rec: rec.getRoot().getElapsedIncl(),
                              reverse = True)
         self.selectedAddr = sortedVals[0].getRoot().getFunctionAddr()
-        rootFuncs = [(rec.getRoot().getFunctionAddr(), rec.getRoot().getFunctionName())
+        rootFuncs = [(rec.getRoot().getFunctionAddr(), cppName.removeTemplateArguments(cppName.removeParams(rec.getRoot().getFunctionName()), 2))
                       for rec in sortedVals]
             
-        self.explWidget = ExploreControls(parent=self, funcs=rootFuncs)
-        self.mainLayout.addWidget(self.explWidget)
-        self.explWidget.newItemSelect.connect(self.onNewItemSelected)
-        #self.explWidget.show()
+        self.navigateWidget = ExploreControls(parent=self, funcs=rootFuncs)
+        self.mainLayout.addWidget(self.navigateWidget)
+        self.navigateWidget.newItemSelect.connect(self.drawWithNewItem)
+        #self.navigateWidget.show()
 
     
     def __init__(self):
@@ -54,10 +56,16 @@ class Window(QWidget):
         self.createAreaPercWidget()
         
         self.setLayout(self.mainLayout)
+        
+    def onNewItemSelectedFromAreaPWidget(self, selectedItemFAddr):
+        # all navigation goes through the navigateWidget
+        self.navigateWidget.navigateTo(selectedItemFAddr)
 
     
     @Slot(int)
-    def onNewItemSelected(self, selectedItemFAddr):
+    def drawWithNewItem(self, selectedItemFAddr):
+        """ Redraw with the specified item """
+        print "Draw with new item %08x" % selectedItemFAddr
         self.renderArea.deleteLater()
         self.mainLayout.removeWidget(self.renderArea)
         self.selectedAddr = selectedItemFAddr

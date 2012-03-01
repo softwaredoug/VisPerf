@@ -3,6 +3,8 @@ from callercallee.entry import Entry
 from callercallee.funcRecord import FunctionRecord
 from callercallee.report import Report
 
+import cppName
+
 
 def totRecordTime(fRecord):
     """ Sum up teh total time spent in this function
@@ -19,13 +21,16 @@ def totRecordTime(fRecord):
     
 def escapeHtml(text):
     """ taken from http://wiki.python.org/moin/EscapingHtml """
-    return text
-    html_escape_table = {",": ", ","&": "&amp;",'"': "&quot;","'": "&apos;",">": "&gt;","<": "&lt;",}
-    return "".join(html_escape_table.get(c,c) for c in text)
+    html_escape_table = {",": ",",
+                         "&": "&amp;",
+                         '"': "&quot;",
+                         "'": "&apos;",
+                         ">": "&gt;",
+                         "<": "&lt;?"}
+    converted = "".join(html_escape_table.get(c,c) for c in text)
+    return converted
     
-def shortenCppFunc(str):
-    withoutParams = str.split("(")
-    return withoutParams[0]
+
     
 
 class CallerCalleePercentageItem(AreaPercentageItem):
@@ -48,7 +53,8 @@ class CallerCalleePercentageItem(AreaPercentageItem):
         
     def getBasicName(self):
         myEntry = self.__myEntry()
-        shortened = shortenCppFunc(myEntry.getFunctionName())
+        shortened = cppName.removeParams(myEntry.getFunctionName())
+        shortened = cppName.removeTemplateArguments(shortened, 2)
         return shortened[-100:]
         
     def getName(self):
@@ -56,7 +62,7 @@ class CallerCalleePercentageItem(AreaPercentageItem):
         myEntry = self.__myEntry()
         baseName = self.getBasicName()
         overallPerc = myEntry.getOverallPercentage()
-        rVal =  baseName + " - " + str(self.getPercentage())[:4] + "(" + str(overallPerc)[:4] + ")"
+        rVal =  "<" + str(self.getPercentage())[:4] + "> (" + str(overallPerc)[:4] + ")" + baseName
         return rVal[-100:]
         
     def getOverallPerc(self):
@@ -68,28 +74,38 @@ class CallerCalleePercentageItem(AreaPercentageItem):
         rec = self.__myRec()
         addr = myEntry.getFunctionAddr()
         
+       
         callers = sorted(rec.getCallers(), key = lambda e: e.getOverallPercentage(), reverse=True)
+        
         calers = callers[:10]
-        callerStr = "".join(["(%2.1lf) %s<br>" % 
-                                (caller.getOverallPercentage(),
-                                 escapeHtml(shortenCppFunc(caller.getFunctionName())[-100:])) for caller in callers])
+        callerStr = "".join(["(%2.2lf) %s<br>" % 
+                                (caller.getOverallPercentage(), escapeHtml(cppName.removeParams(caller.getFunctionName())[-100:])) for caller in callers],
+                                 )
         
         children = self.getChildren()
         callees = sorted(children, key = lambda e: e.getPercentage(), reverse=True)
-        calleeStr = "".join(["%2.1lf (%2.1lf) %s<br>" % 
-                                (callee.getPercentage(),
-                                 callee.getOverallPerc(),
+        calleeStr = "".join(["&lt;%2.2lf&gt; %s<br>" % 
+                                  (callee.getPercentage(),
                                  escapeHtml(callee.getBasicName())) for callee in callees])
         
         rtfStr = """<b>Function (Full Name)</b>:<br>
+                    %s<br><br>
+                    <b>Percent of Overall Time</b><br>
+                    (%2.2lf)<br><br>
+                    <b>Percent of Parent</b><br>
+                    &lt;%2.2lf&gt;<br><br>
+                    <b>Breakdown of children</b>:<br>
+                    %s
+                    &lt;%2.1lf&gt; Local Time<br><br>
+                    <b>Overall time (%2.2lf) distributed among parents:</b>:<br>
                     %s<br>
-                    <b>Callers</b>:<br>
-                    %s<br>
-                    <b>Callees</b>:<br>
-                    %s<br>
-                    <b>Local Percentage</b><br>
-                    %2.1lf<br>
-                    """ % (escapeHtml(myEntry.getFunctionName()), callerStr, calleeStr, self.getLeftoverPerc())
+                    """ % (escapeHtml(myEntry.getFunctionName()), 
+                           myEntry.getOverallPercentage(), 
+                           self.getPercentage(),
+                           calleeStr,
+                           self.getLeftoverPerc(),
+                           myEntry.getOverallPercentage(),
+                           callerStr)
         return rtfStr
         
     def getChildren(self):

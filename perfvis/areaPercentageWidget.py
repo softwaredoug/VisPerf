@@ -84,7 +84,7 @@ class AreaPercentageWidget(QWidget):
     __defaultPenColor = Qt.gray
     __showLocalTime = False
     __childShrinkIn = (10,10)
-    __maxDepth = 4
+    __maxDepth = 2
     __weakDepth = 3
     newItemSelect = Signal(int)
     
@@ -231,6 +231,7 @@ class AreaPercentageWidget(QWidget):
             self.newItemSelect.emit(self.item.getId())
         
     def enterEvent(self, enterEvent):
+        self.setToolTip(self.item.getRtfDescription())
         if self.pen != None:
             self.pen.setColor(self.__mouseOverColor)
             self.pen.setWidth(3)
