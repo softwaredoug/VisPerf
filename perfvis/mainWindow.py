@@ -10,11 +10,6 @@ import sys
 from areaPercentageWidget import AreaPercentageWidget
 from callerCalleePercentageItem import CallerCalleePercentageItem
 from callercallee.report import loadReport
-def tr(str):
-    return str
-
-
-
 
     
       
@@ -38,34 +33,41 @@ class Window(QWidget):
                              key = lambda rec: rec.getRoot().getElapsedIncl(),
                              reverse = True)
         self.selectedAddr = sortedVals[0].getRoot().getFunctionAddr()
-        rootFuncs = [(rec.getRoot().getFunctionAddr(), cppName.removeTemplateArguments(cppName.removeParams(rec.getRoot().getFunctionName()), 2))
+        rootFuncs = [(rec.getRoot().getFunctionAddr(),
+                      cppName.smartShorten(rec.getRoot().getFunctionName(), 100))
                       for rec in sortedVals]
             
         self.navigateWidget = ExploreControls(parent=self, funcs=rootFuncs)
         self.mainLayout.addWidget(self.navigateWidget)
         self.navigateWidget.newItemSelect.connect(self.drawWithNewItem)
-        #self.navigateWidget.show()
+        self.navigateWidget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
     
     def __init__(self):
+        """ Init the window """
         QWidget.__init__(self)
         self.report = loadReport(sys.argv[1])
-        self.setWindowTitle(tr("Basic Drawing"))
+        self.setWindowTitle("VisPerf - Performance Visualizer -- %s" % sys.argv[1])
         self.mainLayout = QVBoxLayout()
+        self.mainLayout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
         self.setupControls()
         self.createAreaPercWidget()
-        
         self.setLayout(self.mainLayout)
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         
     def onNewItemSelectedFromAreaPWidget(self, selectedItemFAddr):
+        """ New item selected from the area percent widget,
+            we need to use the navigateWidget to provide
+            navigation """
         # all navigation goes through the navigateWidget
-        self.navigateWidget.navigateTo(selectedItemFAddr)
+        self.navigateWidget.newNavigation(selectedItemFAddr)
 
     
     @Slot(int)
     def drawWithNewItem(self, selectedItemFAddr):
-        """ Redraw with the specified item """
-        print "Draw with new item %08x" % selectedItemFAddr
+        """ Redraw the underlying area percent widget
+            using the specified function addr as the
+            root"""
         self.renderArea.deleteLater()
         self.mainLayout.removeWidget(self.renderArea)
         self.selectedAddr = selectedItemFAddr

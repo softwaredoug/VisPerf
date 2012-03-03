@@ -53,9 +53,8 @@ class CallerCalleePercentageItem(AreaPercentageItem):
         
     def getBasicName(self):
         myEntry = self.__myEntry()
-        shortened = cppName.removeParams(myEntry.getFunctionName())
-        shortened = cppName.removeTemplateArguments(shortened, 2)
-        return shortened[-100:]
+        shortened = cppName.smartShorten(myEntry.getFunctionName(), 100)
+        return shortened
         
     def getName(self):
         """ Get my name, how I should be labeled on the GUI """
@@ -79,7 +78,7 @@ class CallerCalleePercentageItem(AreaPercentageItem):
         
         calers = callers[:10]
         callerStr = "".join(["(%2.2lf) %s<br>" % 
-                                (caller.getOverallPercentage(), escapeHtml(cppName.removeParams(caller.getFunctionName())[-100:])) for caller in callers],
+                                (caller.getOverallPercentage(), escapeHtml(cppName.smartShorten(caller.getFunctionName(), 100))) for caller in callers],
                                  )
         
         children = self.getChildren()

@@ -74,15 +74,25 @@ class EmptyAreaPercentageItem(AreaPercentageItem):
     def  getId(self):
         return self.funcAddr
 
-        
+
+def initialDirFromItem(item):
+    """ This function looks at the item and gives a random
+        direction of the item's child rects based on a
+        unique property of the item thats random enough
+        to make the GUI look pretty
+        """
+    return len(item.getName()) % 2
+    
+    
+
 
 
 class AreaPercentageWidget(QWidget):
-    __pallete = (QColor(0xff, 0xdf, 0x80), QColor(0x9f, 0xff, 0x80), QColor(0x70, 0xdb, 0xf5), QColor(0xff,0x70,0xdb))
+    __pallete = (QColor(0xff, 0xff, 0xcf), QColor(0xc7,0xff,0xff), QColor(0xff, 0xe5, 0xe5), QColor(0xcc, 0xff, 0xcc) )
     __reservedLabelY = 10
     __mouseOverColor = Qt.black
     __defaultPenColor = Qt.gray
-    __showLocalTime = False
+    __showLeftoverPercAsItsOwnArea = False
     __childShrinkIn = (10,10)
     __maxDepth = 2
     __weakDepth = 3
@@ -105,12 +115,16 @@ class AreaPercentageWidget(QWidget):
 
 	
     def __createDefaultBrush(self,parentRect):
+        """ How this widget's area will be filled """
         if self.absDepth % 2 == 1:
             brush = QLinearGradient(parentRect.topLeft(), parentRect.topRight())
         else:
             brush = QLinearGradient(parentRect.bottomRight(), parentRect.bottomLeft())
         brush.setColorAt(0.0, Qt.white)
         brush.setColorAt(0.5, self.__pallete[self.absDepth % len(self.__pallete)])
+        brush = QBrush()
+        brush.setColor(self.__pallete[self.absDepth % len(self.__pallete)])
+        brush.setStyle(Qt.SolidPattern)
         return brush  
     
     def __createLabel(self, parentRect, text):
@@ -203,7 +217,7 @@ class AreaPercentageWidget(QWidget):
                                          item = child)
                 children = True
             
-        if self.__showLocalTime and (children):
+        if self.__showLeftoverPercAsItsOwnArea and (children):
             self.__createLeftoverWidget(self.item.getLeftoverPerc())
                 
         
@@ -216,10 +230,12 @@ class AreaPercentageWidget(QWidget):
         for ch in self.chs:
             del ch
         self.label = self.__createLabel(
-                    parentRect, self.item.getName())         
+                    parentRect, self.item.getName())
+        # Pick a deterministic
+        initialDir = initialDirFromItem(self.item)
         if parentRect.width() > 4 and parentRect.height() > self.__reservedLabelY*2:
             shrunkInRect = moveCornersTowardCenter(parentRect, 0, self.__reservedLabelY) 
-            self.packedRect = packRect.PackedRect(shrunkInRect, item.getChildren(), initialDir = (self.absDepth % 2))
+            self.packedRect = packRect.PackedRect(shrunkInRect, item.getChildren(), initialDir)
             if not shrunkInRect.isEmpty():
                 self.__createChildWidgets()
         else:
