@@ -6,6 +6,12 @@ Created on Feb 29, 2012
 
 
 def removeParams(cppFuncName):
+    """ Remove everything after the () of a function name
+        >>> removeParams("foo()")
+        'foo'
+        >>> removeParams("foo()()")
+        'foo'
+        """
     withoutParams = cppFuncName.split("(")
     return withoutParams[0]
 

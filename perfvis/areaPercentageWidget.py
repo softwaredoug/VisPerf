@@ -22,6 +22,8 @@ def calculateTextRect(parentRect, minHeight):
         return parentRect
 
 class AreaPercentageItem(object):
+    """ This is the interface a user of AreaPercentWIdget is
+        expected to implement"""
     def __init__(self):
         object.__init__(self)
     
@@ -49,31 +51,6 @@ class AreaPercentageItem(object):
         """ Get a number that uniquely identifies me"""
         raise NotImplementedError
     
-class EmptyAreaPercentageItem(AreaPercentageItem):
-    def __init__(self, perc,name,id):
-        AreaPercentageItem.__init__(self)
-        self.perc = perc
-        self.name = name
-        self.funcAddr = id
-
-    def getPercentage(self): 
-        return self.perc
-    
-    def getName(self):
-        return self.name
-    
-    def getRtfDescription(self):
-        return self.name
-    
-    def getChildren(self):
-        return []
-    
-    def getLeftoverPerc(self):
-        return 100.0
-    
-    def  getId(self):
-        return self.funcAddr
-
 
 def initialDirFromItem(item):
     """ This function looks at the item and gives a random
@@ -88,11 +65,14 @@ def initialDirFromItem(item):
 
 
 class AreaPercentageWidget(QWidget):
+    """ A widget that draws rectangles with areas proportional
+        to a portion of a whole, ie 50% would get a child rect
+        half the parent's area. """
+       
     __pallete = (QColor(0xff, 0xff, 0xcf), QColor(0xc7,0xff,0xff), QColor(0xff, 0xe5, 0xe5), QColor(0xcc, 0xff, 0xcc) )
     __reservedLabelY = 10
     __mouseOverColor = Qt.black
     __defaultPenColor = Qt.gray
-    __showLeftoverPercAsItsOwnArea = False
     __childShrinkIn = (10,10)
     __maxDepth = 2
     __weakDepth = 3
@@ -100,6 +80,7 @@ class AreaPercentageWidget(QWidget):
     
     @Slot(str)
     def __onChildSelected(self, id):
+        """ Propogate my child's newItemSelect signal"""
         self.newItemSelect.emit(id)
     
     def __createDefaultPen(self):
@@ -139,27 +120,24 @@ class AreaPercentageWidget(QWidget):
         return label
 
     
-    def __init__(self, parentRect, absDepth = 0, pen = None, brush = None, parent = None, item = None):
+    def __init__(self, parentRect, absDepth = 0, parent = None, item = None):
+        """ Construct the area % widget around the specified item """
         QWidget.__init__(self, parent)
         self.childAreaRects = []
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.pen = pen
         self.chs = []
         self.label = None
-        self.brush = brush
         self.absDepth = absDepth
-        if self.brush == None:
-            self.brush = self.__createDefaultBrush(parentRect)
-        if self.pen == None:
-            self.pen = self.__createDefaultPen()
+        self.brush = self.__createDefaultBrush(parentRect)
+        self.pen = self.__createDefaultPen()
         self.setItem(item, parentRect)
         
     def minimumSizeHint(self):
         return QSize(self.packedRect.parentRect.width(), self.packedRect.parentRect.height()+50)
     
-    #def sizeHint(self):
-    #    return QSize(400,200)
     def __printTestVector(self, children):
+        """ For testing purposes, dump whats
+            been drawn so far"""
         print "TESTVECTORTESTVECTOR %i children" % len(children)
         print self.packedRect.parentRect
         for child in children:
@@ -167,6 +145,8 @@ class AreaPercentageWidget(QWidget):
                 print child.getPercentage()
                 
     def __adjustChildRectIn(self, childRect):
+        """ Adjust a child rect in towards its center
+            based on self.__childShrinkIn"""
         if childRect.width() < 0 or childRect.height() < 0:
             assert False
             return None
@@ -179,6 +159,7 @@ class AreaPercentageWidget(QWidget):
         return rVal
                     
     def __createChildWidget(self, parent, childRect, abDepth, item):
+        """ Create a single child widget around the item"""
         newChild = AreaPercentageWidget(parent=self,
                                         parentRect=normalize(childRect),
                                         absDepth=abDepth,
@@ -188,16 +169,6 @@ class AreaPercentageWidget(QWidget):
         newChild.newItemSelect.connect(self.__onChildSelected)
         return newChild
         
-    def __createLeftoverWidget(self, leftoverPerc):
-        if not self.packedRect.isEmpty():
-            leftoverRect = self.packedRect.nextRect(leftoverPerc)
-            leftoverRect = self.__adjustChildRectIn(leftoverRect)
-            if leftoverRect:
-                self.chs.append(self.__createChildWidget(parent=self, 
-                                         childRect=leftoverRect, 
-                                         abDepth=self.absDepth+1,
-                                         item=EmptyAreaPercentageItem(leftoverPerc, "local", id = 0)))
-
     
     def __createChildWidgets(self):
         """ Generate all children widgets from child packed rects """
@@ -207,22 +178,16 @@ class AreaPercentageWidget(QWidget):
         if self.absDepth > self.__maxDepth:
             return
 
-        children = False
         for (child, childRect) in self.packedRect:
             childRect = self.__adjustChildRectIn(childRect)
             if childRect:
                 self.__createChildWidget(parent=self, 
                                          childRect=childRect, 
                                          abDepth = self.absDepth+1,
-                                         item = child)
-                children = True
-            
-        if self.__showLeftoverPercAsItsOwnArea and (children):
-            self.__createLeftoverWidget(self.item.getLeftoverPerc())
-                
+                                         item = child)     
         
-        
-    def setItem(self, item, parentRect = None):                     
+    def setItem(self, item, parentRect):        
+        """ Initialize me around the specified item """             
         self.item = item
         self.setToolTip(item.getRtfDescription())
         if self.label:
@@ -243,10 +208,12 @@ class AreaPercentageWidget(QWidget):
         self.update()      
 
     def mousePressEvent(self, mouseEvent):
+        """ If I'm clicked, indicate the new selection"""
         if mouseEvent.button() == Qt.MouseButton.LeftButton:
             self.newItemSelect.emit(self.item.getId())
         
     def enterEvent(self, enterEvent):
+        """ Upon a mouse entering, highlight this widget"""
         self.setToolTip(self.item.getRtfDescription())
         if self.pen != None:
             self.pen.setColor(self.__mouseOverColor)
@@ -255,8 +222,8 @@ class AreaPercentageWidget(QWidget):
 
         
     def leaveEvent(self, leaveEvent):
+        """ Upon a mouse entering, unhighlight this widget"""
         self.pen = self.__createDefaultPen()
-        
 
         #self.brush = None
         self.update()

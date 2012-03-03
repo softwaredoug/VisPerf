@@ -1,70 +1,7 @@
 from PySide.QtGui import *
 from PySide.QtCore import *
+from navhistory import NavHistory
 
-class NavHistory(object):
-    """ Represents a navigation history similar to that of a browser
-        you can go back and forward all you want until you navigate
-        to a brand new place, then everything "forward" from where
-        you are now goes away
-
-        >>> n = NavHistory()
-        >>> n.navigateNew(1)
-        1
-        >>> n.navigateNew(2)
-        2
-        >>> n.navigateNew(3)
-        3
-        >>> n.goBack()
-        2
-        >>> n.goBack()
-        1
-        >>> n.goBack()
-        1
-        >>> n.goForward()
-        2
-        >>> n.goForward()
-        3
-        >>> n.goForward()
-        3
-        >>> n.goBack()
-        2
-        >>> n.navigateNew(4)
-        4
-        >>> n.goForward()
-        4
-        >>> n.goBack()
-        2
-        >>> n.goBack()
-        1
-        """
-    def __init__(self):
-        self.history = []
-        self.currLoc = -1
-
-    def goBack(self):
-        if self.currLoc > 0:
-            self.currLoc -= 1
-        return self.history[self.currLoc]
-
-    def goForward(self):
-        if self.currLoc + 1 < len(self.history):
-            self.currLoc += 1
-        return self.history[self.currLoc]
-
-    def navigateNew(self, location):
-        self.history = self.history[:self.currLoc+1]
-        self.currLoc += 1
-        self.history.append(location)
-        return self.history[self.currLoc]
-
-    def getCurr(self):
-        if self.currLoc < 0 or self.currLoc > len(self.history):
-            raise ValueError("History is empty or invalid")
-        return self.history[self.currLoc]
-
-    def __repr__(self):
-        return repr(self.history)
-    
 
 class ExploreControls(QFrame):
     
@@ -79,9 +16,12 @@ class ExploreControls(QFrame):
         self.layout = QHBoxLayout()
         self.idxToAddr = []
         self.addrToIdx = {}
+        
         self.backButton = QPushButton(text="<-", parent=self)
         self.fwdButton = QPushButton(text="->", parent=self)
+        
         self.cBox = QComboBox(self)
+        self.cBox.setEditable(True)
         self.cBox.setMinimumContentsLength(100)
         self.history.navigateNew(funcs[0][0])
         currIdx = 0
@@ -94,6 +34,14 @@ class ExploreControls(QFrame):
             self.idxToAddr.append(funcAddr)
             self.addrToIdx[funcAddr] = currIdx
             currIdx += 1
+        
+        self.completer = QCompleter(self)
+        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.completer.setCompletionMode(QCompleter.PopupCompletion)
+        self.completer.setModel(self.cBox.model())
+        
+        self.cBox.setCompleter(self.completer)
+        
         self.cBox.currentIndexChanged.connect(self.cBoxSelected)
         self.backButton.clicked.connect(self.backButtonClicked)
         self.fwdButton.clicked.connect(self.fwdButtonClicked)
@@ -106,6 +54,9 @@ class ExploreControls(QFrame):
         return QSize(0,40)
 
     def updateCbox(self, addr):
+        """ Programatically update the combobox 
+            (make sure no erroneous navigation events
+             occur)"""
         # We intentionally disable navigation because
         # setting the current index programatically looks identical
         # to the user selecting an index, and we don't want
@@ -115,6 +66,7 @@ class ExploreControls(QFrame):
         self.isCboxNavigationEnabled = True
         
     def __navigateTo(self, addr):
+        """ Update everything to the specified location """
         self.updateCbox(addr)
         self.newItemSelect.emit(addr) 
 
@@ -130,6 +82,10 @@ class ExploreControls(QFrame):
         
     @Slot(int)
     def cBoxSelected(self, idx):
+        """Either the user has selected the combo box
+           (in which case we want to navigate a new)
+           or some other action has caused this to update
+           (in which case we just want to ignore the event"""          
         # We intentionally disable navigation because
         # setting the current index programatically looks identical
         # to the user selecting an index, and we don't want
