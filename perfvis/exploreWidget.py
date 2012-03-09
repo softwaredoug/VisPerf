@@ -8,8 +8,9 @@ class ExploreControls(QFrame):
     __maxFuncSize = 125
     
     newItemSelect = Signal(int)
+    depthChanged = Signal(int)
     
-    def __init__(self, parent, funcs):
+    def __init__(self, parent, funcs, initDepth):
         QFrame.__init__(self, parent)
         self.isCboxNavigationEnabled = True
         self.history = NavHistory()
@@ -41,14 +42,20 @@ class ExploreControls(QFrame):
         self.completer.setModel(self.cBox.model())
         
         self.cBox.setCompleter(self.completer)
+        self.depthSpin = QSpinBox(self)
+        self.depthSpin.setMaximum(50)
+        self.depthSpin.setMinimum(1)
+        self.depthSpin.setValue(initDepth)
         
         self.cBox.currentIndexChanged.connect(self.cBoxSelected)
+        self.depthSpin.valueChanged.connect(self.depthSpinChanged)
         self.backButton.clicked.connect(self.backButtonClicked)
         self.fwdButton.clicked.connect(self.fwdButtonClicked)
         self.layout.addWidget(self.backButton)
         self.layout.addWidget(self.fwdButton)
         self.layout.addWidget(self.cBox)
-        self.setLayout(self.layout)
+        self.layout.addWidget(self.depthSpin)
+        self.setLayout(self.layout)                             
         
     def minimumSizeHint(self):
         return QSize(0,40)
@@ -78,7 +85,10 @@ class ExploreControls(QFrame):
             newAddr = self.history.navigateNew(addr)
             assert newAddr == addr
             self.__navigateTo(newAddr)
-            
+    
+    @Slot(int)
+    def depthSpinChanged(self, val):
+        self.depthChanged.emit(val)
         
     @Slot(int)
     def cBoxSelected(self, idx):

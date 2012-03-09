@@ -37,7 +37,7 @@ class AreaPercentageItem(object):
         
     def getRtfDescription(self):
         """ Get a rich text description used for a tool-tip"""
-        raise NotImplementedException
+        raise NotImplementedError
         
     def getChildren(self):
         """ Get a list of my children """
@@ -74,7 +74,6 @@ class AreaPercentageWidget(QWidget):
     __mouseOverColor = Qt.black
     __defaultPenColor = Qt.gray
     __childShrinkIn = (10,10)
-    __maxDepth = 2
     __weakDepth = 3
     newItemSelect = Signal(int)
     
@@ -120,7 +119,7 @@ class AreaPercentageWidget(QWidget):
         return label
 
     
-    def __init__(self, parentRect, absDepth = 0, parent = None, item = None):
+    def __init__(self, parentRect, absDepth = 0, maxAbsDepth = 0, parent = None, item = None):
         """ Construct the area % widget around the specified item """
         QWidget.__init__(self, parent)
         self.childAreaRects = []
@@ -128,6 +127,7 @@ class AreaPercentageWidget(QWidget):
         self.chs = []
         self.label = None
         self.absDepth = absDepth
+        self.maxAbsDepth = maxAbsDepth
         self.brush = self.__createDefaultBrush(parentRect)
         self.pen = self.__createDefaultPen()
         self.setItem(item, parentRect)
@@ -158,11 +158,12 @@ class AreaPercentageWidget(QWidget):
             rVal = None
         return rVal
                     
-    def __createChildWidget(self, parent, childRect, abDepth, item):
+    def __createChildWidget(self, parent, childRect, absDepth, maxAbsDepth, item):
         """ Create a single child widget around the item"""
         newChild = AreaPercentageWidget(parent=self,
                                         parentRect=normalize(childRect),
-                                        absDepth=abDepth,
+                                        absDepth=absDepth,
+                                        maxAbsDepth=maxAbsDepth,
                                         item=item)
         newChild.setGeometry(childRect)
         newChild.show()
@@ -175,7 +176,7 @@ class AreaPercentageWidget(QWidget):
         if self.item == None:
             return
         
-        if self.absDepth > self.__maxDepth:
+        if self.absDepth >= self.maxAbsDepth:
             return
 
         for (child, childRect) in self.packedRect:
@@ -183,7 +184,8 @@ class AreaPercentageWidget(QWidget):
             if childRect:
                 self.__createChildWidget(parent=self, 
                                          childRect=childRect, 
-                                         abDepth = self.absDepth+1,
+                                         absDepth = self.absDepth+1,
+                                         maxAbsDepth=self.maxAbsDepth,
                                          item = child)     
         
     def setItem(self, item, parentRect):        
