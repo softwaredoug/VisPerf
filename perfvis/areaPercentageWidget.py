@@ -52,17 +52,6 @@ class AreaPercentageItem(object):
         raise NotImplementedError
     
 
-def initialDirFromItem(item):
-    """ This function looks at the item and gives a random
-        direction of the item's child rects based on a
-        unique property of the item thats random enough
-        to make the GUI look pretty
-        """
-    return len(item.getName()) % 2
-    
-    
-
-
 
 class AreaPercentageWidget(QWidget):
     """ A widget that draws rectangles with areas proportional
@@ -73,7 +62,8 @@ class AreaPercentageWidget(QWidget):
     __reservedLabelY = 10
     __mouseOverColor = Qt.black
     __defaultPenColor = Qt.gray
-    __childShrinkIn = (10,10)
+    __childTrimIn = (5,5)
+    __postTrimDontShow = (5,5)
     __weakDepth = 3
     newItemSelect = Signal(int)
     
@@ -148,16 +138,23 @@ class AreaPercentageWidget(QWidget):
                 
     def __adjustChildRectIn(self, childRect):
         """ Adjust a child rect in towards its center
-            based on self.__childShrinkIn"""
+            based on self.__childTrimIn"""
         if childRect.width() < 0 or childRect.height() < 0:
             assert False
             return None
+        (postTrimDontShowW, postTrimDontShowH) =  (AreaPercentageWidget.__postTrimDontShow[0],
+                                           AreaPercentageWidget.__postTrimDontShow[1])
+
         rVal = moveCornersTowardCenter(childRect, 0, 0)
-        (deltaX, deltaY) = self.__childShrinkIn
+        (deltaX, deltaY) = self.__childTrimIn
         if childRect.width() > deltaX * 2 and childRect.height() > deltaY * 2:
             rVal = moveCornersTowardCenter(rVal, deltaX, deltaY)
         else:
-            rVal = None
+            return None
+        
+        if rVal.width() < postTrimDontShowW or rVal.height() < postTrimDontShowH:
+            return None    
+            
         return rVal
                     
     def __createChildWidget(self, parent, childRect, absDepth, maxAbsDepth, item):
@@ -201,10 +198,9 @@ class AreaPercentageWidget(QWidget):
         self.label = self.__createLabel(
                     parentRect, self.item.getName())
         # Pick a deterministic
-        initialDir = initialDirFromItem(self.item)
         if parentRect.width() > 4 and parentRect.height() > self.__reservedLabelY*2:
             shrunkInRect = moveCornersTowardCenter(parentRect, 0, self.__reservedLabelY) 
-            self.packedRect = packRect.PackedRect(shrunkInRect, item.getChildren(), initialDir)
+            self.packedRect = packRect.PackedRect(shrunkInRect, item.getChildren())
             if not shrunkInRect.isEmpty():
                 self.__createChildWidgets()
         else:
@@ -261,6 +257,7 @@ class AreaPercentageWidget(QWidget):
     @Slot(QPoint)
     def showContextMenu(self, pos):
         """ Draw a custom context menu for this """
+        return
         print "showContextMenu"
         globalPos = self.mapToGlobal(pos)
         

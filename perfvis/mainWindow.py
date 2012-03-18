@@ -83,7 +83,6 @@ class Window(QWidget):
         
     @Slot(int)
     def drawWithNewDepth(self, newMaxDepth):
-        print "drawWithNewDepth"
         self.redrawAreaPercentWidget(self.selectedAddr, newMaxDepth)
         
     
