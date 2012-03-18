@@ -131,6 +131,8 @@ class AreaPercentageWidget(QWidget):
         self.brush = self.__createDefaultBrush(parentRect)
         self.pen = self.__createDefaultPen()
         self.setItem(item, parentRect)
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.showContextMenu)
         
     def minimumSizeHint(self):
         return QSize(self.packedRect.parentRect.width(), self.packedRect.parentRect.height()+50)
@@ -213,6 +215,8 @@ class AreaPercentageWidget(QWidget):
         """ If I'm clicked, indicate the new selection"""
         if mouseEvent.button() == Qt.MouseButton.LeftButton:
             self.newItemSelect.emit(self.item.getId())
+        else:
+            QWidget.mousePressEvent(self, mouseEvent)
         
     def enterEvent(self, enterEvent):
         """ Upon a mouse entering, highlight this widget"""
@@ -253,8 +257,16 @@ class AreaPercentageWidget(QWidget):
         rectToDraw = self.rect()
         if rectToDraw:
             painter.drawRect(rectToDraw)
-        #rectToDraw.setWidth(rectToDraw.width()-1)
-        #rectToDraw.setHeight(rectToDraw.height()-1)
+
+    @Slot(QPoint)
+    def showContextMenu(self, pos):
+        """ Draw a custom context menu for this """
+        print "showContextMenu"
+        globalPos = self.mapToGlobal(pos)
         
+        myMenu = QMenu()
+        myMenu.addAction("Doug 1")
+        selectedItem = myMenu.exec_(globalPos)
+        pass
         
         

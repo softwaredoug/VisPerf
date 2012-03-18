@@ -18,7 +18,6 @@ class Window(QWidget):
     __initDepth = 2
     
     def createAreaPercWidget(self):
-        print "Creating widget for %08x" % self.selectedAddr
         item = CallerCalleePercentageItem(self.report, self.selectedAddr, 100.0)
         #item = TestAreaPercentageItem(100.0)
         geom = QRect(0,0,1024,780)
@@ -47,9 +46,10 @@ class Window(QWidget):
     
     def __init__(self):
         """ Init the window """
+        from version import version
         QWidget.__init__(self)
         self.report = loadReport(sys.argv[1])
-        self.setWindowTitle("VisPerf - Performance Visualizer -- %s" % sys.argv[1])
+        self.setWindowTitle("VisPerf v%s -- %s" % (version, sys.argv[1]))
         self.mainLayout = QVBoxLayout()
         self.mainLayout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
         self.setupControls()
@@ -92,6 +92,10 @@ if __name__ == '__main__':
     # QT parents own their childre
     app = QApplication(sys.argv)
     
+    if len(sys.argv) != 2:
+        print "Usage:\n VisPerf.exe <yourcallercalleereport.csv>"
+        exit()
+        
     w = Window()
     app.setActiveWindow(w)
     w.show()
