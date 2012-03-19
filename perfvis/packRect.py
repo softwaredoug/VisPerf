@@ -19,7 +19,7 @@ class PackedRect:
     
     def __init__(self, parentRect, percentageItems):
         self.parentRect = self.leftoverRect = QRectF()
-        self.percItems = sorted(percentageItems, key=lambda pItem: pItem.getPercentage(), reverse = True)
+        self.percItems = sorted(percentageItems, key=lambda pItem: pItem.getLocalPercentage(), reverse = True)
         self.parentRect = QRectF(parentRect)
         self.reset()
         self.percs = []
@@ -33,7 +33,7 @@ class PackedRect:
             while perc == 0:
                 if self.currPercItem < len(self.percItems):
                     percItem = self.percItems[self.currPercItem]
-                    perc = percItem.getPercentage()
+                    perc = percItem.getLocalPercentage()
                 else:
                     raise StopIteration()
                 self.currPercItem += 1

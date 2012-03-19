@@ -3,18 +3,18 @@ import unittest
 from PySide.QtCore import QRectF
 
 class TestPercItem:
-    def __init__(self, perc):
-        self.perc = perc
+    def __init__(self, localPerc):
+        self.localPerc = localPerc
         
-    def getPercentage(self):
-        print "returning %lf" % self.perc
-        return self.perc
+    def getLocalPercentage(self):
+        print "returning %lf" % self.localPerc
+        return self.localPerc
     
     def __str__(self):
-        return "Perc %lf" % self.perc
+        return "Perc %lf" % self.localPerc
     
     def __repr__(self):
-        return "TestPercItem(%lf)" % self.perc
+        return "TestPercItem(%lf)" % self.localPerc
     
 def TestPercItemsFromPercList(percList):
     rVal = [TestPercItem(perc) for perc in percList]
@@ -53,7 +53,7 @@ class TestPackedRect(unittest.TestCase):
             for (chItem, nextChRect) in pR:
                
                 self.__assertIsContainedWithin(parentRect, nextChRect)
-                self.__assertIsApproxPercOfArea(parentRect, nextChRect, chItem.getPercentage())
+                self.__assertIsApproxPercOfArea(parentRect, nextChRect, chItem.getLocalPercentage())
                 self.__assertDoesNotOverlapSiblings(parentRect, nextChRect, sibls)
                 sibls.append(nextChRect)
 

@@ -3,6 +3,7 @@ from PySide.QtCore import *
 import packRect
 from rectUtils import *
 import copy
+from callerCalleePercentageItem import sortedByPerc 
  
 
 def calculateTextRect(parentRect, minHeight):
@@ -20,36 +21,12 @@ def calculateTextRect(parentRect, minHeight):
         return textRect
     else:
         return parentRect
-
-class AreaPercentageItem(object):
-    """ This is the interface a user of AreaPercentWIdget is
-        expected to implement"""
-    def __init__(self):
-        object.__init__(self)
     
-    def getPercentage(self):
-        """ Get my percentage in the parent """
-        raise NotImplementedError
-    
-    def getName(self):
-        """ Get my name, how I should be labeled on the GUI """
-        raise NotImplementedError
-        
-    def getRtfDescription(self):
-        """ Get a rich text description used for a tool-tip"""
-        raise NotImplementedError
-        
-    def getChildren(self):
-        """ Get a list of my children """
-        raise NotImplementedError
-    
-    def getLeftoverPerc(self):
-        """ Percentage not allocated to children"""
-        raise NotImplementedError
-    
-    def getId(self):
-        """ Get a number that uniquely identifies me"""
-        raise NotImplementedError
+def decorateItemName(item):
+    baseName = item.getName()
+    overallPerc = item.getOverallPerc()
+    rVal =  "<" + str(item.getLocalPercentage())[:4] + "> (" + str(overallPerc)[:4] + ")" + baseName
+    return rVal[-100:]
     
 
 
@@ -133,8 +110,8 @@ class AreaPercentageWidget(QWidget):
         print "TESTVECTORTESTVECTOR %i children" % len(children)
         print self.packedRect.parentRect
         for child in children:
-            if child.getPercentage() > 0:
-                print child.getPercentage()
+            if child.getLocalPercentage() > 0:
+                print child.getLocalPercentage()
                 
     def __adjustChildRectIn(self, childRect):
         """ Adjust a child rect in towards its center
@@ -190,17 +167,17 @@ class AreaPercentageWidget(QWidget):
     def setItem(self, item, parentRect):        
         """ Initialize me around the specified item """             
         self.item = item
-        self.setToolTip(item.getRtfDescription())
+        self.setToolTip(item.getFullPerfDescription())
         if self.label:
             del self.label
         for ch in self.chs:
             del ch
         self.label = self.__createLabel(
-                    parentRect, self.item.getName())
+                    parentRect, decorateItemName(self.item))
         # Pick a deterministic
         if parentRect.width() > 4 and parentRect.height() > self.__reservedLabelY*2:
             shrunkInRect = moveCornersTowardCenter(parentRect, 0, self.__reservedLabelY) 
-            self.packedRect = packRect.PackedRect(shrunkInRect, item.getChildren())
+            self.packedRect = packRect.PackedRect(shrunkInRect, item.createCallees())
             if not shrunkInRect.isEmpty():
                 self.__createChildWidgets()
         else:
@@ -216,7 +193,7 @@ class AreaPercentageWidget(QWidget):
         
     def enterEvent(self, enterEvent):
         """ Upon a mouse entering, highlight this widget"""
-        self.setToolTip(self.item.getRtfDescription())
+        self.setToolTip(self.item.getFullPerfDescription())
         if self.pen != None:
             self.pen.setColor(self.__mouseOverColor)
             self.pen.setWidth(3)
@@ -257,13 +234,37 @@ class AreaPercentageWidget(QWidget):
     @Slot(QPoint)
     def showContextMenu(self, pos):
         """ Draw a custom context menu for this """
-        return
-        print "showContextMenu"
         globalPos = self.mapToGlobal(pos)
         
-        myMenu = QMenu()
-        myMenu.addAction("Doug 1")
-        selectedItem = myMenu.exec_(globalPos)
-        pass
+        copyReport = QAction("Copy Perf Report", self)
         
+        childActions = [QAction(unicode(decorateItemName(child)), self)
+                             for child in sortedByPerc(self.item.createCallees())]
+        
+        parentActions = [QAction(unicode(parent.getName()), self)
+                             for parent in sortedByPerc(self.item.createCallers())]
+
+        
+        goToChild = QMenu("Go To Child")
+        goToChild.addActions(childActions)
+        
+        goToParent = QMenu("Go To Parent")
+        goToParent.addActions(parentActions)
+        
+        
+        
+        
+        myMenu = QMenu()
+        myMenu.addAction(copyReport)
+        myMenu.addMenu(goToChild)
+        myMenu.addMenu(goToParent)
+        selectedAction = myMenu.exec_(globalPos)
+        
+        if selectedAction is copyReport:
+            pass
+        elif selectedAction in childActions:
+            pass
+        elif selectedAction in parentActions:
+            pass
+                
         
