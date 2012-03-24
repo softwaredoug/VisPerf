@@ -18,6 +18,7 @@ if wrdSize != "32bit":
 
 
 setup(windows=[{'script':'mainWindow.py', 'dest_base':'VisPerf'}],
+      data_files = ['../LICENSE.txt'],
       options = {
     'py2exe': {
         'dist_dir':("../bin/32/%s" % version),
