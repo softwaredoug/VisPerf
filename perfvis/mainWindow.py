@@ -21,9 +21,9 @@ class Window(QWidget):
         item = CallerCalleePercentageItem(self.report, self.selectedAddr, 100.0)
         #item = TestAreaPercentageItem(100.0)
         geom = QRect(0,0,1024,780)
-        self.renderArea = AreaPercentageWidget(geom, item=item, maxAbsDepth = self.selectedDepth)
+        self.renderArea = AreaPercentageWidget(geom, rootFunction=item, maxAbsDepth = self.selectedDepth)
         self.mainLayout.addWidget(self.renderArea)
-        self.renderArea.newItemSelect.connect(self.onNewItemSelectedFromAreaPWidget)
+        self.renderArea.newRootFunctionSelected.connect(self.onNewItemSelectedFromAreaPWidget)
         #self.renderArea.show()
         
     def setupControls(self):
@@ -39,7 +39,7 @@ class Window(QWidget):
             
         self.navigateWidget = ExploreControls(parent=self, funcs=rootFuncs, initDepth = Window.__initDepth)
         self.mainLayout.addWidget(self.navigateWidget)
-        self.navigateWidget.newItemSelect.connect(self.drawWithNewItem)
+        self.navigateWidget.newRootFunctionSelected.connect(self.drawWithNewItem)
         self.navigateWidget.depthChanged.connect(self.drawWithNewDepth)
         self.navigateWidget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 

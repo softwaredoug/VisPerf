@@ -136,7 +136,7 @@ class CallerCalleePercentageItem:
         totTime = totRecordTime(myRec)
         return (myRec.getRoot().getElapsedExcl() / totTime) * 100.0
     
-    def getId(self):
+    def getAddress(self):
         """ Return unique integer identifier for this item """
         return self.funcAddr
 

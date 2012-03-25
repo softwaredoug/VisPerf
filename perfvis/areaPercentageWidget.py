@@ -3,7 +3,7 @@ from PySide.QtCore import *
 import packRect
 from rectUtils import *
 import copy
-from callerCalleePercentageItem import sortedByPerc 
+from callerCalleePercentageItem import sortedByPerc, CallerCalleePercentageItem
  
 
 def calculateTextRect(parentRect, minHeight):
@@ -22,10 +22,10 @@ def calculateTextRect(parentRect, minHeight):
     else:
         return parentRect
     
-def decorateItemName(item):
-    baseName = item.getName()
-    overallPerc = item.getOverallPerc()
-    rVal =  "<" + str(item.getLocalPercentage())[:4] + "> (" + str(overallPerc)[:4] + ")" + baseName
+def createFunctionLabel(function):
+    baseName = function.getName()
+    overallPerc = function.getOverallPerc()
+    rVal =  "<" + str(function.getLocalPercentage())[:4] + "> (" + str(overallPerc)[:4] + ")" + baseName
     return rVal[-100:]
     
 
@@ -42,12 +42,12 @@ class AreaPercentageWidget(QWidget):
     __childTrimIn = (5,5)
     __postTrimDontShow = (5,5)
     __weakDepth = 3
-    newItemSelect = Signal(int)
+    newRootFunctionSelected = Signal(int)
     
     @Slot(str)
-    def __onChildSelected(self, id):
-        """ Propogate my child's newItemSelect signal"""
-        self.newItemSelect.emit(id)
+    def __onChildSelected(self, functionAddr):
+        """ Propogate my child's newRootFunctionSelected signal"""
+        self.newRootFunctionSelected.emit(functionAddr)
     
     def __createDefaultPen(self):
         pen = QPen()
@@ -86,8 +86,8 @@ class AreaPercentageWidget(QWidget):
         return label
 
     
-    def __init__(self, parentRect, absDepth = 0, maxAbsDepth = 0, parent = None, item = None):
-        """ Construct the area % widget around the specified item """
+    def __init__(self, parentRect, absDepth = 0, maxAbsDepth = 0, parent = None, rootFunction = None):
+        """ Construct the area % widget around the specified rootFunction """
         QWidget.__init__(self, parent)
         self.childAreaRects = []
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -97,7 +97,7 @@ class AreaPercentageWidget(QWidget):
         self.maxAbsDepth = maxAbsDepth
         self.brush = self.__createDefaultBrush(parentRect)
         self.pen = self.__createDefaultPen()
-        self.setItem(item, parentRect)
+        self.setRootFunction(rootFunction, parentRect)
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.showContextMenu)
         
@@ -134,22 +134,22 @@ class AreaPercentageWidget(QWidget):
             
         return rVal
                     
-    def __createChildWidget(self, parent, childRect, absDepth, maxAbsDepth, item):
-        """ Create a single child widget around the item"""
+    def __createChildWidget(self, parent, childRect, absDepth, maxAbsDepth, childFunction):
+        """ Create a single child widget around the childFunction"""
         newChild = AreaPercentageWidget(parent=self,
                                         parentRect=normalize(childRect),
                                         absDepth=absDepth,
                                         maxAbsDepth=maxAbsDepth,
-                                        item=item)
+                                        rootFunction=childFunction)
         newChild.setGeometry(childRect)
         newChild.show()
-        newChild.newItemSelect.connect(self.__onChildSelected)
+        newChild.newRootFunctionSelected.connect(self.__onChildSelected)
         return newChild
         
     
     def __createChildWidgets(self):
         """ Generate all children widgets from child packed rects """
-        if self.item == None:
+        if self.rootFunction == None:
             return
         
         if self.absDepth >= self.maxAbsDepth:
@@ -162,22 +162,21 @@ class AreaPercentageWidget(QWidget):
                                          childRect=childRect, 
                                          absDepth = self.absDepth+1,
                                          maxAbsDepth=self.maxAbsDepth,
-                                         item = child)     
+                                         childFunction = child)     
         
-    def setItem(self, item, parentRect):        
-        """ Initialize me around the specified item """             
-        self.item = item
-        self.setToolTip(item.getFullPerfDescription())
+    def setRootFunction(self, rootFunction, parentRect):        
+        """ Initialize me around the specified rootFunction """             
+        self.rootFunction = rootFunction
+        self.setToolTip(rootFunction.getFullPerfDescription())
         if self.label:
             del self.label
         for ch in self.chs:
             del ch
         self.label = self.__createLabel(
-                    parentRect, decorateItemName(self.item))
-        # Pick a deterministic
+                    parentRect, createFunctionLabel(self.rootFunction))
         if parentRect.width() > 4 and parentRect.height() > self.__reservedLabelY*2:
             shrunkInRect = moveCornersTowardCenter(parentRect, 0, self.__reservedLabelY) 
-            self.packedRect = packRect.PackedRect(shrunkInRect, item.createCallees())
+            self.packedRect = packRect.PackedRect(shrunkInRect, rootFunction.createCallees())
             if not shrunkInRect.isEmpty():
                 self.__createChildWidgets()
         else:
@@ -187,13 +186,13 @@ class AreaPercentageWidget(QWidget):
     def mousePressEvent(self, mouseEvent):
         """ If I'm clicked, indicate the new selection"""
         if mouseEvent.button() == Qt.MouseButton.LeftButton:
-            self.newItemSelect.emit(self.item.getId())
+            self.newRootFunctionSelected.emit(self.rootFunction.getAddress())
         else:
             QWidget.mousePressEvent(self, mouseEvent)
         
     def enterEvent(self, enterEvent):
         """ Upon a mouse entering, highlight this widget"""
-        self.setToolTip(self.item.getFullPerfDescription())
+        self.setToolTip(self.rootFunction.getFullPerfDescription())
         if self.pen != None:
             self.pen.setColor(self.__mouseOverColor)
             self.pen.setWidth(3)
@@ -203,8 +202,6 @@ class AreaPercentageWidget(QWidget):
     def leaveEvent(self, leaveEvent):
         """ Upon a mouse entering, unhighlight this widget"""
         self.pen = self.__createDefaultPen()
-
-        #self.brush = None
         self.update()
         
         
@@ -230,41 +227,59 @@ class AreaPercentageWidget(QWidget):
         rectToDraw = self.rect()
         if rectToDraw:
             painter.drawRect(rectToDraw)
+            
+    
+    def __createActionCallbackToSelectFunction(self, selectedFunctionId):
+        """ Create a callback to select selectedFunctionId for view """
+        @Slot(bool)
+        def actionSelectedSlot(checked=False):
+            self.newRootFunctionSelected.emit(selectedFunctionId)
+        return actionSelectedSlot
+    
+    @Slot(bool)
+    def __copyPerfReportToClipboard(self, checked=False):
+        """ Copy whats presented in the tooltip to the clipboard"""
+        fullDesc = self.rootFunction.getFullPerfDescription()
+        clipboard = QApplication.clipboard()
+        fullDescMime = QMimeData()
+        fullDescMime.setHtml(fullDesc)
+        print fullDescMime.hasHtml()
+        clipboard.setMimeData(fullDescMime)
+    
+    def __createActionForFunction(self, function):
+        """ Create a menu action for the passed in area percentage
+            rootFunction"""
+        action = QAction(unicode(createFunctionLabel(function)), self)
+        action.triggered.connect(self.__createActionCallbackToSelectFunction(function.getAddress()))
+        return action
 
     @Slot(QPoint)
     def showContextMenu(self, pos):
-        """ Draw a custom context menu for this """
+        """ Draw a custom context menu for this 
+            area percentage widget, all the work of 
+            the actions is done via callbacks """
         globalPos = self.mapToGlobal(pos)
         
         copyReport = QAction("Copy Perf Report", self)
+        copyReport.triggered.connect(self.__copyPerfReportToClipboard)
         
-        childActions = [QAction(unicode(decorateItemName(child)), self)
-                             for child in sortedByPerc(self.item.createCallees())]
-        
-        parentActions = [QAction(unicode(parent.getName()), self)
-                             for parent in sortedByPerc(self.item.createCallers())]
-
+        # Actions to select each callee, sorted by %
+        childActions = [self.__createActionForFunction(callee) for callee in
+                         sortedByPerc(self.rootFunction.createCallees())]
+        # Actions to select each caller, sorted by %
+        parentActions = [self.__createActionForFunction(caller) for caller in
+                          sortedByPerc(self.rootFunction.createCallers())]
         
         goToChild = QMenu("Go To Child")
         goToChild.addActions(childActions)
         
         goToParent = QMenu("Go To Parent")
-        goToParent.addActions(parentActions)
-        
-        
-        
+        goToParent.addActions(parentActions)       
         
         myMenu = QMenu()
         myMenu.addAction(copyReport)
         myMenu.addMenu(goToChild)
         myMenu.addMenu(goToParent)
-        selectedAction = myMenu.exec_(globalPos)
-        
-        if selectedAction is copyReport:
-            pass
-        elif selectedAction in childActions:
-            pass
-        elif selectedAction in parentActions:
-            pass
+        myMenu.exec_(globalPos)
                 
         

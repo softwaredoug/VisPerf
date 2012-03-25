@@ -7,7 +7,7 @@ class ExploreControls(QFrame):
     
     __maxFuncSize = 125
     
-    newItemSelect = Signal(int)
+    newRootFunctionSelected = Signal(int)
     depthChanged = Signal(int)
     
     def __init__(self, parent, funcs, initDepth):
@@ -75,7 +75,7 @@ class ExploreControls(QFrame):
     def __navigateTo(self, addr):
         """ Update everything to the specified location """
         self.updateCbox(addr)
-        self.newItemSelect.emit(addr) 
+        self.newRootFunctionSelected.emit(addr) 
 
     def newNavigation(self, addr):
         """ Represents a new navigation, a branch from
