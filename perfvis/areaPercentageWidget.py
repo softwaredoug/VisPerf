@@ -167,7 +167,7 @@ class AreaPercentageWidget(QWidget):
     def setRootFunction(self, rootFunction, parentRect):        
         """ Initialize me around the specified rootFunction """             
         self.rootFunction = rootFunction
-        self.setToolTip(rootFunction.getFullPerfDescription())
+        self.setToolTip(rootFunction.getFullPerfDescription(rtf=True))
         if self.label:
             del self.label
         for ch in self.chs:
@@ -192,7 +192,7 @@ class AreaPercentageWidget(QWidget):
         
     def enterEvent(self, enterEvent):
         """ Upon a mouse entering, highlight this widget"""
-        self.setToolTip(self.rootFunction.getFullPerfDescription())
+        self.setToolTip(self.rootFunction.getFullPerfDescription(rtf=True))
         if self.pen != None:
             self.pen.setColor(self.__mouseOverColor)
             self.pen.setWidth(3)
@@ -239,11 +239,10 @@ class AreaPercentageWidget(QWidget):
     @Slot(bool)
     def __copyPerfReportToClipboard(self, checked=False):
         """ Copy whats presented in the tooltip to the clipboard"""
-        fullDesc = self.rootFunction.getFullPerfDescription()
         clipboard = QApplication.clipboard()
         fullDescMime = QMimeData()
-        fullDescMime.setHtml(fullDesc)
-        print fullDescMime.hasHtml()
+        fullDescMime.setHtml(self.rootFunction.getFullPerfDescription(rtf=True))
+        fullDescMime.setText(self.rootFunction.getFullPerfDescription(rtf=False))
         clipboard.setMimeData(fullDescMime)
     
     def __createActionForFunction(self, function):

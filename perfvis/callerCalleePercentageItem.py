@@ -28,9 +28,27 @@ def escapeHtml(text):
                          "<": "&lt;"}
     converted = "".join(html_escape_table.get(c,c) for c in text)
     return converted
+
+def escapeFunc(rtf):
+    if rtf:
+        return escapeHtml
+    else:
+        return noop
+    
+def formatCfg(rtf):
+    if rtf:
+        boldBegin, boldEnd, eol,  lt, gt, escapeFunc = '<b>', '</b>', '<br>', '&lt;', '&gt;', escapeHtml 
+    else:
+        boldBegin, boldEnd, eol,  lt, gt, escapeFunc = '','','\n', '<', '>', noop
+    return (boldBegin, boldEnd, eol, lt, gt, escapeFunc)
     
 
+
     
+
+def noop(text):
+    return text
+
 
 class CallerCalleePercentageItem:
     """ An item drawn in the area percent widget, represents
@@ -63,46 +81,52 @@ class CallerCalleePercentageItem:
         """ My percentage of the overall """
         myEntry = self.__myEntry()
         return myEntry.getOverallPercentage()
+    
+    def __formatCallers(self, rtf):
+        rec = self.__myRec()
+        callers = sorted(rec.getCallers(), key = lambda e: e.getOverallPercentage(), reverse=True)
         
-    def getFullPerfDescription(self):
+        escFunc = escapeFunc(rtf)
+        
+        calers = callers[:10]
+        callerStr = "".join(["(%2.2lf) %s${eol}" % 
+                                (caller.getOverallPercentage(),
+                                 escFunc(cppName.smartShorten(caller.getFunctionName(), 100))) for caller in callers],
+                                 )
+        return callerStr
+
+    def __formatCallees(self, rtf):
+        children = self.createCallees()
+        callees = sorted(children, key = lambda e: e.getLocalPercentage(), reverse=True)
+        calleeStr = "".join(["${lt}%2.2lf${gt} %s${eol}" % 
+                                  (callee.getLocalPercentage(),
+                                 escapeFunc(rtf)(callee.getName())) for callee in callees])
+        return calleeStr
+    
+
+        
+    def getFullPerfDescription(self, rtf):
+        from string import Template
         """ Format an RTF description of my data"""
         myEntry = self.__myEntry()
         rec = self.__myRec()
         addr = myEntry.getFunctionAddr()
         
        
-        callers = sorted(rec.getCallers(), key = lambda e: e.getOverallPercentage(), reverse=True)
+        callerStr = self.__formatCallers(rtf)
+        calleeStr = self.__formatCallees(rtf)
         
-        calers = callers[:10]
-        callerStr = "".join(["(%2.2lf) %s<br>" % 
-                                (caller.getOverallPercentage(), escapeHtml(cppName.smartShorten(caller.getFunctionName(), 100))) for caller in callers],
-                                 )
+        boldBeg, boldEnd, eol, lt, gt, escapeFunc = formatCfg(rtf)
         
-        children = self.createCallees()
-        callees = sorted(children, key = lambda e: e.getLocalPercentage(), reverse=True)
-        calleeStr = "".join(["&lt;%2.2lf&gt; %s<br>" % 
-                                  (callee.getLocalPercentage(),
-                                 escapeHtml(callee.getName())) for callee in callees])
-        
-        rtfStr = """<b>Function (Full Name)</b>:<br>
-                    %s<br><br>
-                    <b>Percent of Overall Time</b><br>
-                    (%2.2lf)<br><br>
-                    <b>Percent of Parent</b><br>
-                    &lt;%2.2lf&gt;<br><br>
-                    <b>Breakdown of children</b>:<br>
-                    %s
-                    &lt;%2.1lf&gt; Local Time<br><br>
-                    <b>Overall time (%2.2lf) distributed among parents:</b>:<br>
-                    %s<br>
-                    """ % (escapeHtml(myEntry.getFunctionName()), 
+        rtfTemplate = """${boldBeg}Function (Full Name)${boldEnd}:${eol}%s${eol}${eol}${boldBeg}Percent of Overall Time${boldEnd}${eol}(%2.2lf)${eol}${eol}${boldBeg}Percent of Parent${boldEnd}${eol}${lt}%2.2lf${gt}${eol}${eol}${boldBeg}Breakdown of children${boldEnd}:${eol}%s${lt}%2.1lf${gt} Local Time${eol}${eol}${boldBeg}Overall time (%2.2lf) distributed among parents:${boldEnd}:${eol}%s${eol}""" % (escapeFunc(myEntry.getFunctionName()), 
                            myEntry.getOverallPercentage(), 
                            self.getLocalPercentage(),
                            calleeStr,
                            self.getLeftoverPerc(),
                            myEntry.getOverallPercentage(),
                            callerStr)
-        return rtfStr
+        
+        return Template(rtfTemplate).substitute(boldBeg=boldBeg, boldEnd=boldEnd, eol=eol, lt=lt, gt=gt)
         
     def createCallees(self):
         """ Build a list of my children """
