@@ -1,6 +1,7 @@
 from callercallee.entry import Entry
 from callercallee.funcRecord import FunctionRecord
 from callercallee.report import Report
+from textPerfReport import TextPerfReport
 
 import cppName
 
@@ -17,37 +18,6 @@ def totRecordTime(fRecord):
     for rec in fRecord.getCallees():
         totTime += rec.getElapsedIncl()
     return totTime
-    
-def escapeHtml(text):
-    """ taken from http://wiki.python.org/moin/EscapingHtml """
-    html_escape_table = {",": ",",
-                         "&": "&amp;",
-                         '"': "&quot;",
-                         "'": "&apos;",
-                         ">": "&gt;",
-                         "<": "&lt;"}
-    converted = "".join(html_escape_table.get(c,c) for c in text)
-    return converted
-
-def escapeFunc(rtf):
-    if rtf:
-        return escapeHtml
-    else:
-        return noop
-    
-def formatCfg(rtf):
-    if rtf:
-        boldBegin, boldEnd, eol,  lt, gt, escapeFunc = '<b>', '</b>', '<br>', '&lt;', '&gt;', escapeHtml 
-    else:
-        boldBegin, boldEnd, eol,  lt, gt, escapeFunc = '','','\n', '<', '>', noop
-    return (boldBegin, boldEnd, eol, lt, gt, escapeFunc)
-    
-
-
-    
-
-def noop(text):
-    return text
 
 
 class CallerCalleePercentageItem:
@@ -59,6 +29,23 @@ class CallerCalleePercentageItem:
         self.report = report
         self.localPerc = localPerc
         self.funcAddr = id
+        self.rtfFormattedReport = None
+        self.plainTextFormattedReport = None
+        
+    def __createReport(self, rtf):
+        report = TextPerfReport(rtf)
+        
+        rec = self.__myRec()
+        
+        callers = sorted(rec.getCallers(), key = lambda e: e.getOverallPercentage(), reverse=True)
+        callees = sorted(self.createCallees(), key = lambda e: e.getLocalPercentage(), reverse=True)
+            
+        return report.format(functionName = self.getName(), 
+                             callers = callers, 
+                             callees = callees, 
+                             overallPerc = self.getOverallPerc(),
+                             percOfParent = self.getLocalPercentage(), 
+                             localPerc = self.getLeftoverPerc())               
         
     def __myRec(self):
         return self.report.getRecord(self.funcAddr)
@@ -81,52 +68,21 @@ class CallerCalleePercentageItem:
         """ My percentage of the overall """
         myEntry = self.__myEntry()
         return myEntry.getOverallPercentage()
-    
-    def __formatCallers(self, rtf):
-        rec = self.__myRec()
-        callers = sorted(rec.getCallers(), key = lambda e: e.getOverallPercentage(), reverse=True)
-        
-        escFunc = escapeFunc(rtf)
-        
-        calers = callers[:10]
-        callerStr = "".join(["(%2.2lf) %s${eol}" % 
-                                (caller.getOverallPercentage(),
-                                 escFunc(cppName.smartShorten(caller.getFunctionName(), 100))) for caller in callers],
-                                 )
-        return callerStr
-
-    def __formatCallees(self, rtf):
-        children = self.createCallees()
-        callees = sorted(children, key = lambda e: e.getLocalPercentage(), reverse=True)
-        calleeStr = "".join(["${lt}%2.2lf${gt} %s${eol}" % 
-                                  (callee.getLocalPercentage(),
-                                 escapeFunc(rtf)(callee.getName())) for callee in callees])
-        return calleeStr
-    
+   
 
         
     def getFullPerfDescription(self, rtf):
-        from string import Template
-        """ Format an RTF description of my data"""
-        myEntry = self.__myEntry()
-        rec = self.__myRec()
-        addr = myEntry.getFunctionAddr()
+        """ Format and return an RTF or plaintext description of my data"""
+        if self.rtfFormattedReport == None:
+            self.rtfFormattedReport = self.__createReport(rtf=True)
+        if self.plainTextFormattedReport == None:
+            self.plainTextFormattedReport = self.__createReport(rtf=False)
         
-       
-        callerStr = self.__formatCallers(rtf)
-        calleeStr = self.__formatCallees(rtf)
+        if rtf:
+            return self.rtfFormattedReport
+        else:
+            return self.plainTextFormattedReport
         
-        boldBeg, boldEnd, eol, lt, gt, escapeFunc = formatCfg(rtf)
-        
-        rtfTemplate = """${boldBeg}Function (Full Name)${boldEnd}:${eol}%s${eol}${eol}${boldBeg}Percent of Overall Time${boldEnd}${eol}(%2.2lf)${eol}${eol}${boldBeg}Percent of Parent${boldEnd}${eol}${lt}%2.2lf${gt}${eol}${eol}${boldBeg}Breakdown of children${boldEnd}:${eol}%s${lt}%2.1lf${gt} Local Time${eol}${eol}${boldBeg}Overall time (%2.2lf) distributed among parents:${boldEnd}:${eol}%s${eol}""" % (escapeFunc(myEntry.getFunctionName()), 
-                           myEntry.getOverallPercentage(), 
-                           self.getLocalPercentage(),
-                           calleeStr,
-                           self.getLeftoverPerc(),
-                           myEntry.getOverallPercentage(),
-                           callerStr)
-        
-        return Template(rtfTemplate).substitute(boldBeg=boldBeg, boldEnd=boldEnd, eol=eol, lt=lt, gt=gt)
         
     def createCallees(self):
         """ Build a list of my children """
