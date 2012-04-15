@@ -34,7 +34,7 @@ class AreaPercentageWidget(QWidget):
     """ A widget that draws rectangles with areas proportional
         to a portion of a whole, ie 50% would get a child rect
         half the parent's area. """
-       
+    __grid = QRect(0,0,20,10)
     __pallete = (QColor(0xff, 0xff, 0xcf), QColor(0xc7,0xff,0xff), QColor(0xff, 0xe5, 0xe5), QColor(0xcc, 0xff, 0xcc) )
     __reservedLabelY = 10
     __mouseOverColor = Qt.black
@@ -63,12 +63,6 @@ class AreaPercentageWidget(QWidget):
 	
     def __createDefaultBrush(self,parentRect):
         """ How this widget's area will be filled """
-        if self.absDepth % 2 == 1:
-            brush = QLinearGradient(parentRect.topLeft(), parentRect.topRight())
-        else:
-            brush = QLinearGradient(parentRect.bottomRight(), parentRect.bottomLeft())
-        brush.setColorAt(0.0, Qt.white)
-        brush.setColorAt(0.5, self.__pallete[self.absDepth % len(self.__pallete)])
         brush = QBrush()
         brush.setColor(self.__pallete[self.absDepth % len(self.__pallete)])
         brush.setStyle(Qt.SolidPattern)
@@ -102,7 +96,7 @@ class AreaPercentageWidget(QWidget):
         self.customContextMenuRequested.connect(self.showContextMenu)
         
     def minimumSizeHint(self):
-        return QSize(self.packedRect.parentRect.width(), self.packedRect.parentRect.height()+50)
+        return QSize(self.parentRect.width(), self.parentRect.height()+50)
     
     def __printTestVector(self, children):
         """ For testing purposes, dump whats
@@ -133,6 +127,14 @@ class AreaPercentageWidget(QWidget):
             return None    
             
         return rVal
+    
+    def __scaleToGeom(self, rect):
+        geom = QRectF(self.parentRect)
+        xScale = geom.width() / self.__grid.width()
+        yScale = geom.height() / self.__grid.height()
+        
+        return QRect(rect.x() * xScale, rect.y() * yScale, rect.width() * xScale, rect.height() * yScale)
+
                     
     def __createChildWidget(self, parent, childRect, absDepth, maxAbsDepth, childFunction):
         """ Create a single child widget around the childFunction"""
@@ -156,13 +158,15 @@ class AreaPercentageWidget(QWidget):
             return
 
         for (child, childRect) in self.packedRect:
-            childRect = self.__adjustChildRectIn(childRect)
-            if childRect:
-                self.__createChildWidget(parent=self, 
-                                         childRect=childRect, 
-                                         absDepth = self.absDepth+1,
-                                         maxAbsDepth=self.maxAbsDepth,
-                                         childFunction = child)     
+            scaledRect = self.__scaleToGeom(childRect)
+            if not scaledRect.isEmpty():
+                scaledRect = self.__adjustChildRectIn(scaledRect)
+                if scaledRect:
+                    self.__createChildWidget(parent=self, 
+                                             childRect=scaledRect, 
+                                             absDepth = self.absDepth+1,
+                                             maxAbsDepth=self.maxAbsDepth,
+                                             childFunction = child)     
         
     def setRootFunction(self, rootFunction, parentRect):        
         """ Initialize me around the specified rootFunction """             
@@ -175,8 +179,11 @@ class AreaPercentageWidget(QWidget):
         self.label = self.__createLabel(
                     parentRect, createFunctionLabel(self.rootFunction))
         if parentRect.width() > 4 and parentRect.height() > self.__reservedLabelY*2:
-            shrunkInRect = moveCornersTowardCenter(parentRect, 0, self.__reservedLabelY) 
-            self.packedRect = packRect.PackedRect(shrunkInRect, rootFunction.createCallees())
+            initHeight = parentRect.y()
+            shrunkInRect = moveCornersTowardCenter(parentRect, 0, self.__reservedLabelY+50)
+            self.parentRect = parentRect
+            print "shrunk in %i to %i" % (initHeight, shrunkInRect.y())
+            self.packedRect = packRect.PackedRect(self.__grid, rootFunction.createCallees())
             if not shrunkInRect.isEmpty():
                 self.__createChildWidgets()
         else:

@@ -22,6 +22,7 @@ class Window(QWidget):
         #item = TestAreaPercentageItem(100.0)
         geom = QRect(0,0,1024,780)
         self.renderArea = AreaPercentageWidget(geom, rootFunction=item, maxAbsDepth = self.selectedDepth)
+        #self.renderArea.setGeometry(geom)
         self.mainLayout.addWidget(self.renderArea)
         self.renderArea.newRootFunctionSelected.connect(self.onNewItemSelectedFromAreaPWidget)
         #self.renderArea.show()

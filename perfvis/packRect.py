@@ -1,6 +1,7 @@
 
-from PySide.QtCore import QRect, QRectF
+from PySide.QtCore import QRect
 from rectUtils import validRectReturned
+from math import ceil
 
 class Direction:
     Horizontal = 0
@@ -9,18 +10,25 @@ class Direction:
     @staticmethod
     def flip(direction):
         return not direction
+    
+class TestItem:
+    def __init__(self, perc):
+        self.perc = perc
+        
+    def getLocalPercentage(self):
+        return self.perc
   
 
 class PackedRect:
     """ Given p and a starting rect, draw
-        a subrectangle that takes p% of the
+        a subrectangle that takes <= p% of the
         area of the starting rect. Repeat for p1,p2...
         as long as there continues to be room in the parent rect"""  
     
     def __init__(self, parentRect, percentageItems):
-        self.parentRect = self.leftoverRect = QRectF()
+        self.parentRect = self.leftoverRect = QRect()
         self.percItems = sorted(percentageItems, key=lambda pItem: pItem.getLocalPercentage(), reverse = True)
-        self.parentRect = QRectF(parentRect)
+        self.parentRect = QRect(parentRect)
         self.reset()
         self.percs = []
         
@@ -47,7 +55,7 @@ class PackedRect:
         import copy
         self.lastFlipPercentage = 100
         self.currPercItem = 0
-        self.leftoverRect = copy.deepcopy(self.parentRect)
+        self.leftoverRect = QRect(self.parentRect)
         
     def __updateDirectionToPreferSquareness(self, neededArea):
         """ Pick a direction that will give a more square 
@@ -78,7 +86,7 @@ class PackedRect:
         """ Return all remaining leftover space and empty
             the leftover rect"""
         assert not self.leftoverRect.isEmpty()
-        remaining = QRectF(self.leftoverRect)
+        remaining = QRect(self.leftoverRect)
         self.leftoverRect.setWidth(-1)
         self.leftoverRect.setHeight(-1)
         assert self.leftoverRect.isEmpty()
@@ -86,10 +94,12 @@ class PackedRect:
     
     def __calculateGivingUpHeight(self, neededArea, width, height):
         height = neededArea / width
+        height = ceil(height)
         return (width, height)
         
     def __calculaceGivingUpWidth(self, neededArea, width, height):
         width = neededArea / height
+        width = ceil(width)
         return (width, height)
         
     
@@ -111,17 +121,19 @@ class PackedRect:
         thisDir = self.__updateDirectionToPreferSquareness(neededArea)
         giveUpFns = [self.__giveUpLeftoverWidth, self.__giveUpLeftoverHeight] 
         fn = giveUpFns[thisDir]
-        newRect = QRectF()
+        newRect = QRect()
         newRect.setTopLeft(self.leftoverRect.topLeft())
         (width, height) = (self.leftoverRect.width(), self.leftoverRect.height())
         
         (width, height) = fn(neededArea, width, height)
       
-        if not self.leftoverRect.isValid():
+        if not self.leftoverRect.isValid() and not self.leftoverRect.isEmpty():
             print "Failure with the following input"
             print "W/H %i/%i" % (width, height)
             print "ParentRect %s" % repr(self.parentRect)
+            print "Leftover %s" % repr(self.leftoverRect)
             print "Percentages %s" % repr(self.percs)
+
             assert False
         
         newRect.setHeight(height)
