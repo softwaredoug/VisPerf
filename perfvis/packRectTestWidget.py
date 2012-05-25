@@ -17,7 +17,7 @@ class PackedRectTestWidget(QWidget):
         self.pen = QPen()
         self.pen.setColor(QColor(0xff, 0, 0))
         
-    def __scaleToGeom(self, rect):
+    def __scaleToParentRect(self, rect):
         geom = QRectF(self.geometry())
         xScale = geom.width() / self.__grid.width()
         yScale = geom.height() / self.__grid.height()
@@ -30,7 +30,7 @@ class PackedRectTestWidget(QWidget):
         if mouseEvent.button() == Qt.MouseButton.LeftButton:
             try:
                 (item, rect) = self.packRect.next()
-                scaledRect = self.__scaleToGeom(rect)
+                scaledRect = self.__scaleToParentRect(rect)
                 self.rectsToDraw.append(scaledRect)
                 newLabel = QLabel(self)
                 newLabel.setText(str(item.getLocalPercentage())+"%")

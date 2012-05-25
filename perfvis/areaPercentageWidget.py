@@ -96,7 +96,7 @@ class AreaPercentageWidget(QWidget):
         self.customContextMenuRequested.connect(self.showContextMenu)
         
     def minimumSizeHint(self):
-        return QSize(self.parentRect.width(), self.parentRect.height()+50)
+        return QSize(self.parentRect.width(), self.parentRect.height())
     
     def __printTestVector(self, children):
         """ For testing purposes, dump whats
@@ -118,6 +118,7 @@ class AreaPercentageWidget(QWidget):
 
         rVal = moveCornersTowardCenter(childRect, 0, 0)
         (deltaX, deltaY) = self.__childTrimIn
+        deltaY = deltaY + self.__reservedLabelY
         if childRect.width() > deltaX * 2 and childRect.height() > deltaY * 2:
             rVal = moveCornersTowardCenter(rVal, deltaX, deltaY)
         else:
@@ -128,7 +129,7 @@ class AreaPercentageWidget(QWidget):
             
         return rVal
     
-    def __scaleToGeom(self, rect):
+    def __scaleToParentRect(self, rect):
         geom = QRectF(self.parentRect)
         xScale = geom.width() / self.__grid.width()
         yScale = geom.height() / self.__grid.height()
@@ -158,7 +159,7 @@ class AreaPercentageWidget(QWidget):
             return
 
         for (child, childRect) in self.packedRect:
-            scaledRect = self.__scaleToGeom(childRect)
+            scaledRect = self.__scaleToParentRect(childRect)
             if not scaledRect.isEmpty():
                 scaledRect = self.__adjustChildRectIn(scaledRect)
                 if scaledRect:
@@ -180,11 +181,11 @@ class AreaPercentageWidget(QWidget):
                     parentRect, createFunctionLabel(self.rootFunction))
         if parentRect.width() > 4 and parentRect.height() > self.__reservedLabelY*2:
             initHeight = parentRect.y()
-            shrunkInRect = moveCornersTowardCenter(parentRect, 0, self.__reservedLabelY+50)
+            #shrunkInRect = moveCornersTowardCenter(parentRect, 0, self.__reservedLabelY*2)
             self.parentRect = parentRect
-            print "shrunk in %i to %i" % (initHeight, shrunkInRect.y())
+            #print "shrunk in %i to %i" % (initHeight, shrunkInRect.y())
             self.packedRect = packRect.PackedRect(self.__grid, rootFunction.createCallees())
-            if not shrunkInRect.isEmpty():
+            if not parentRect.isEmpty():
                 self.__createChildWidgets()
         else:
             self.packedRect = packRect.emptyPackedRect
