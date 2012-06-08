@@ -59,14 +59,18 @@ class PackedRect:
         
     def __updateDirectionToPreferSquareness(self, neededArea):
         """ Pick a direction that will give a more square 
-            result for the next rectangle """
+            result for the next rectangle, but strongly
+            bias toward horizontal. Its important for there
+            to be consistency in this algorithm and not 
+            have it depend on any weird side effects """
+        biasTowardHoriz = 1.5
         (width, height) = (self.leftoverRect.width(),self.leftoverRect.height())
         (width, height) = self.__calculaceGivingUpWidth(neededArea, width, height)
         widthDiff = abs(width-height) 
         (width, height) = (self.leftoverRect.width(),self.leftoverRect.height())
         (width, height) = self.__calculateGivingUpHeight(neededArea, width, height)
         heightDiff = abs(width-height)
-        if widthDiff < heightDiff:
+        if widthDiff < (heightDiff * biasTowardHoriz):
             return Direction.Horizontal
         else:
             return Direction.Vertical

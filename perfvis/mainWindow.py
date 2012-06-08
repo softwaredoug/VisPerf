@@ -14,7 +14,7 @@ from callercallee.report import loadReport
     
       
 
-class Window(QWidget):
+class MainWindow(QWidget):
     __initDepth = 2
     
     def createAreaPercWidget(self):
@@ -33,24 +33,24 @@ class Window(QWidget):
                              key = lambda rec: rec.getRoot().getElapsedIncl(),
                              reverse = True)
         self.selectedAddr = sortedVals[0].getRoot().getFunctionAddr()
-        self.selectedDepth = Window.__initDepth
+        self.selectedDepth = MainWindow.__initDepth
         rootFuncs = [(rec.getRoot().getFunctionAddr(),
                       cppName.smartShorten(rec.getRoot().getFunctionName(), 100))
                       for rec in sortedVals]
             
-        self.navigateWidget = ExploreControls(parent=self, funcs=rootFuncs, initDepth = Window.__initDepth)
+        self.navigateWidget = ExploreControls(parent=self, funcs=rootFuncs, initDepth = MainWindow.__initDepth)
         self.mainLayout.addWidget(self.navigateWidget)
         self.navigateWidget.newRootFunctionSelected.connect(self.drawWithNewItem)
         self.navigateWidget.depthChanged.connect(self.drawWithNewDepth)
         self.navigateWidget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
     
-    def __init__(self):
+    def __init__(self, callerCalleeCsvFname):
         """ Init the window """
         from version import version
         QWidget.__init__(self)
-        self.report = loadReport(sys.argv[1])
-        self.setWindowTitle("VisPerf v%s -- %s" % (version, sys.argv[1]))
+        self.report = loadReport(callerCalleeCsvFname)
+        self.setWindowTitle("VisPerf v%s -- %s" % (version, callerCalleeCsvFname))
         self.mainLayout = QVBoxLayout()
         self.mainLayout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
         self.setupControls()
@@ -93,10 +93,13 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     
     if len(sys.argv) != 2:
-        print "Usage:\n VisPerf.exe <yourcallercalleereport.csv>"
-        exit()
+        callerCalleeCsvFname = QFileDialog.getOpenFileName(None, "Open Caller-Callee csv", "C:/", "Csv Files (*.csv)")
+        callerCalleeCsvFname = callerCalleeCsvFname[0]
+    else:
+        callerCalleeCsvFname = sys.argv[1]
+    print callerCalleeCsvFname
         
-    w = Window()
+    w = MainWindow(callerCalleeCsvFname)
     app.setActiveWindow(w)
     w.show()
 

@@ -34,7 +34,7 @@ class AreaPercentageWidget(QWidget):
     """ A widget that draws rectangles with areas proportional
         to a portion of a whole, ie 50% would get a child rect
         half the parent's area. """
-    __grid = QRect(0,0,20,10)
+    __grid = QRect(0,0,10,10)
     __pallete = (QColor(0xff, 0xff, 0xcf), QColor(0xc7,0xff,0xff), QColor(0xff, 0xe5, 0xe5), QColor(0xcc, 0xff, 0xcc) )
     __reservedLabelY = 10
     __mouseOverColor = Qt.black
@@ -44,9 +44,10 @@ class AreaPercentageWidget(QWidget):
     __weakDepth = 3
     newRootFunctionSelected = Signal(int)
     
-    @Slot(str)
+    @Slot(int)
     def __onChildSelected(self, functionAddr):
         """ Propogate my child's newRootFunctionSelected signal"""
+        print "child selected %i" % functionAddr
         self.newRootFunctionSelected.emit(functionAddr)
     
     def __createDefaultPen(self):
@@ -75,8 +76,13 @@ class AreaPercentageWidget(QWidget):
 
         labelRect = calculateTextRect(parentRect, self.__reservedLabelY)
         label = QLabel(text, self)
+        myFont = label.font()
+        fm = QFontMetrics(myFont)
         label.setGeometry(labelRect)
-        label.setAlignment(Qt.AlignHCenter)
+        if labelRect.width() < fm.width(text):
+            label.setAlignment(Qt.AlignJustify)
+        else:
+            label.setAlignment(Qt.AlignHCenter)
         return label
 
     
@@ -194,7 +200,9 @@ class AreaPercentageWidget(QWidget):
     def mousePressEvent(self, mouseEvent):
         """ If I'm clicked, indicate the new selection"""
         if mouseEvent.button() == Qt.MouseButton.LeftButton:
-            self.newRootFunctionSelected.emit(self.rootFunction.getAddress())
+            addr = self.rootFunction.getAddress()
+            print "mouse press %i" % addr
+            self.newRootFunctionSelected.emit(addr)
         else:
             QWidget.mousePressEvent(self, mouseEvent)
         
