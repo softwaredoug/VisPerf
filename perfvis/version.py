@@ -1,2 +1,2 @@
 #Current VisPerf version information
-version = "0.91"
+version = "0.92"

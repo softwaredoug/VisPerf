@@ -26,7 +26,7 @@ def createFunctionLabel(function):
     baseName = function.getName()
     overallPerc = function.getOverallPerc()
     rVal =  "<" + str(function.getLocalPercentage())[:4] + "> (" + str(overallPerc)[:4] + ")" + baseName
-    return rVal[-100:]
+    return rVal
     
 
 
@@ -47,7 +47,6 @@ class AreaPercentageWidget(QWidget):
     @Slot(int)
     def __onChildSelected(self, functionAddr):
         """ Propogate my child's newRootFunctionSelected signal"""
-        print "child selected %i" % functionAddr
         self.newRootFunctionSelected.emit(functionAddr)
     
     def __createDefaultPen(self):
@@ -79,8 +78,9 @@ class AreaPercentageWidget(QWidget):
         myFont = label.font()
         fm = QFontMetrics(myFont)
         label.setGeometry(labelRect)
+        # Center unless there isn't enough room for the text
         if labelRect.width() < fm.width(text):
-            label.setAlignment(Qt.AlignJustify)
+            label.setAlignment(Qt.AlignLeft)
         else:
             label.setAlignment(Qt.AlignHCenter)
         return label
@@ -201,7 +201,6 @@ class AreaPercentageWidget(QWidget):
         """ If I'm clicked, indicate the new selection"""
         if mouseEvent.button() == Qt.MouseButton.LeftButton:
             addr = self.rootFunction.getAddress()
-            print "mouse press %i" % addr
             self.newRootFunctionSelected.emit(addr)
         else:
             QWidget.mousePressEvent(self, mouseEvent)
